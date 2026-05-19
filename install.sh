@@ -26,11 +26,9 @@ SCAFFOLD_DIR_NAME="docs"
 EOF
 fi
 
-for file_name in AGENT.md ARCHITECTURE.md README.md DEPLOY.md TODO.md; do
-  template_path="$templates_dir/$file_name"
-  if [[ ! -f "$template_path" || ( "$file_name" == "AGENT.md" && ! -s "$template_path" ) ]]; then
-    if [[ "$file_name" == "AGENT.md" ]]; then
-      cat <<'EOF' >"$template_path"
+agent_template="$templates_dir/AGENT.md"
+if [[ ! -f "$agent_template" || ! -s "$agent_template" ]]; then
+  cat <<'EOF' >"$agent_template"
 - Indentation: 2 spaces everywhere (Python and TypeScript).
 - Semicolon-separated statements: The owner frequently writes multiple short statements on one line separated by ; (e.g. x = 1; y = 2; return x + y). Preserve this when it appears; do not split it across lines.
 - Concise over verbose: Prefer compact expressions. Do not expand single-line constructs into multi-line ones just because a linter would.
@@ -74,9 +72,12 @@ Documentation Rules
 - Keep documentation factual and current.
 - Separate confirmed decisions from open questions clearly.
 EOF
-    else
-      : >"$template_path"
-    fi
+fi
+
+for file_name in ARCHITECTURE.md README.md DEPLOY.md TODO.md; do
+  template_path="$templates_dir/$file_name"
+  if [[ ! -f "$template_path" ]]; then
+    : >"$template_path"
   fi
 done
 
