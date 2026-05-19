@@ -34,7 +34,7 @@ Documentation Rules
 - ARCHITECTURE.md is not a textbook. Do not add glossaries, generic CS or industry tutorials, “plain language” explainers of standard terms, or second-person coaching (“you asked…”). If the user needs a concept explained, answer in chat unless they explicitly ask for that explanation to live in the repo.
 - Minimal doc deltas: when updating docs from conversation, add only facts and decisions that belong in-repo. Do not dump full Q&A transcripts or speculative padding into ARCHITECTURE.md / TODO.md.
 - Keep AGENT.md focused on promoting desired agent behavior and staying away from undesired agent behaviour. Anything product architecture does not belong here.
-- Update TODO.md whenever you encounter an unresolved decision, open question, or planned task.
+- Never add items to TODO.md without explicit approval from the owner.
 - Do not delete items from TODO.md. When an item in TODO.md is resolved, check it off and include the agent name and timestamp.
 - Items in TODO.md should be added in *reverse-chronological order*, meaning that new items will be added to the *top* of the file, not the bottom.
 - Update AGENT.md whenever the user specifies a repeated agent behavior that should persist.
