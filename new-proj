@@ -57,12 +57,6 @@ fi
 mkdir -p "$templates_dir"
 mkdir -p "$scaffold_dir"
 
-if command -v git >/dev/null 2>&1; then
-  git -C "$project_dir" init >/dev/null
-else
-  echo "Warning: git is not installed; skipped git init." >&2
-fi
-
 for file_name in "${files[@]}"; do
   template_file="$templates_dir/$file_name"
   target_file="$scaffold_dir/$file_name"
@@ -148,6 +142,34 @@ EOF
 fi
 
 cp "$gitignore_template" "$gitignore_target"
+
+setup_git_and_github() {
+  if ! command -v git >/dev/null 2>&1; then
+    echo "Warning: git is not installed; skipped git and GitHub setup." >&2
+    return 0
+  fi
+
+  git -C "$project_dir" init >/dev/null
+  git -C "$project_dir" add -A
+  git -C "$project_dir" commit -m "init"
+  git -C "$project_dir" branch -M main
+
+  if ! command -v gh >/dev/null 2>&1; then
+    echo "Warning: GitHub CLI (gh) is not installed; skipped remote repo creation." >&2
+    return 0
+  fi
+
+  if ! gh auth status >/dev/null 2>&1; then
+    echo "Warning: gh is not authenticated; skipped remote repo creation." >&2
+  elif ! (
+    cd "$project_dir"
+    gh repo create "$project_name" --source=. --public --push
+  ); then
+    echo "Warning: failed to create or push GitHub repo; local git repo is ready." >&2
+  fi
+}
+
+setup_git_and_github
 
 echo "Created project: $project_dir"
 echo "Scaffold folder: $scaffold_dir"

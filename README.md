@@ -31,7 +31,8 @@ new-proj "my-project"
 Creates:
 
 - `~/Documents/coding-temp/my-project/`
-- Git repository initialized
+- Git repository initialized with an `init` commit on `main`
+- Public GitHub repo (same name as the project) via `gh`, with initial push
 - scaffold folder (default `docs`)
 - files inside scaffold folder:
   - `AGENT.md`
@@ -40,6 +41,8 @@ Creates:
   - `DEPLOY.md`
   - `TODO.md`
 - root `.gitignore`
+
+Requires `git` and [GitHub CLI](https://cli.github.com/) (`gh`) logged in (`gh auth login`). If either is missing or `gh repo create` fails, the local project is still created and you get a warning.
 
 ## Configure defaults
 
