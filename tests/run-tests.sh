@@ -71,14 +71,15 @@ test_creates_scaffold_and_root_readme() {
   local root="$NEW_PROJ_BASE_DIR/alpha"
   assert_file "$root/README.md"
   assert_file "$root/.gitignore"
-  assert_file "$root/docs/AGENT.md"
+  assert_file "$root/AGENTS.md"
   assert_file "$root/docs/ARCHITECTURE.md"
   assert_file "$root/docs/DEPLOY.md"
   assert_file "$root/docs/TODO.md"
   assert_no_file "$root/docs/README.md"
+  assert_no_file "$root/docs/AGENTS.md"
 
   assert_eq "custom-readme" "$(tr -d '\n' <"$root/README.md")"
-  assert_eq "custom-agent-rules" "$(tr -d '\n' <"$root/docs/AGENT.md")"
+  assert_eq "custom-agent-rules" "$(tr -d '\n' <"$root/AGENTS.md")"
   assert_eq "custom-arch" "$(tr -d '\n' <"$root/docs/ARCHITECTURE.md")"
   assert_eq "node_modules/" "$(tr -d '\n' <"$root/.gitignore")"
 
@@ -91,8 +92,10 @@ test_custom_scaffold_dir_name() {
   export NEW_PROJ_SCAFFOLD_DIR_NAME="blueprint"
   run_new_proj "beta" >/dev/null
 
-  assert_file "$NEW_PROJ_BASE_DIR/beta/blueprint/AGENT.md"
-  assert_no_file "$NEW_PROJ_BASE_DIR/beta/docs/AGENT.md"
+  assert_file "$NEW_PROJ_BASE_DIR/beta/AGENTS.md"
+  assert_file "$NEW_PROJ_BASE_DIR/beta/blueprint/ARCHITECTURE.md"
+  assert_no_file "$NEW_PROJ_BASE_DIR/beta/blueprint/AGENTS.md"
+  assert_no_file "$NEW_PROJ_BASE_DIR/beta/docs/AGENTS.md"
 
   teardown_new_proj_env
 }
@@ -110,25 +113,26 @@ test_respects_config_env_scaffold_name() {
   teardown_new_proj_env
 }
 
-test_seeds_agent_template_when_missing() {
+test_seeds_agents_template_when_missing() {
   setup_new_proj_env
   run_new_proj "delta" >/dev/null
 
-  assert_file "$NEW_PROJ_TEMPLATES_DIR/AGENT.md"
-  local agent_template
-  agent_template="$(<"$NEW_PROJ_TEMPLATES_DIR/AGENT.md")"
-  assert_contains "$agent_template" "Indentation: 2 spaces"
+  assert_file "$NEW_PROJ_TEMPLATES_DIR/AGENTS.md"
+  local agents_template
+  agents_template="$(<"$NEW_PROJ_TEMPLATES_DIR/AGENTS.md")"
+  assert_contains "$agents_template" "Indentation: 2 spaces"
+  assert_contains "$agents_template" "docs/ARCHITECTURE.md"
 
-  local project_agent
-  project_agent="$(<"$NEW_PROJ_BASE_DIR/delta/docs/AGENT.md")"
-  assert_contains "$project_agent" "Indentation: 2 spaces"
+  local project_agents
+  project_agents="$(<"$NEW_PROJ_BASE_DIR/delta/AGENTS.md")"
+  assert_contains "$project_agents" "Indentation: 2 spaces"
 
   teardown_new_proj_env
 }
 
 test_creates_default_gitignore_template_when_missing() {
   setup_new_proj_env
-  printf '%s\n' 'agent' >"$NEW_PROJ_TEMPLATES_DIR/AGENT.md"
+  printf '%s\n' 'agent' >"$NEW_PROJ_TEMPLATES_DIR/AGENTS.md"
   for f in README.md ARCHITECTURE.md DEPLOY.md TODO.md; do
     : >"$NEW_PROJ_TEMPLATES_DIR/$f"
   done
@@ -184,12 +188,13 @@ test_install_creates_config_and_templates_when_missing() {
   setup_install_home
   "$INSTALL_SH" >/dev/null
   assert_file "$HOME/.config/new-proj/config.env"
-  assert_file "$HOME/.config/new-proj/templates/AGENT.md"
+  assert_file "$HOME/.config/new-proj/templates/AGENTS.md"
   assert_file "$HOME/.config/new-proj/templates/README.md"
   assert_file "$HOME/.config/new-proj/templates/.gitignore"
-  local agent
-  agent="$(<"$HOME/.config/new-proj/templates/AGENT.md")"
-  assert_contains "$agent" "Indentation: 2 spaces"
+  local agents
+  agents="$(<"$HOME/.config/new-proj/templates/AGENTS.md")"
+  assert_contains "$agents" "Indentation: 2 spaces"
+  assert_contains "$agents" "docs/ARCHITECTURE.md"
   teardown_install_home
 }
 
@@ -197,10 +202,10 @@ test_install_does_not_overwrite_existing_templates() {
   setup_install_home
   mkdir -p "$HOME/.config/new-proj/templates"
   printf '%s\n' 'SCAFFOLD_DIR_NAME="docs"' >"$HOME/.config/new-proj/config.env"
-  printf '%s\n' 'KEEP_THIS_AGENT' >"$HOME/.config/new-proj/templates/AGENT.md"
+  printf '%s\n' 'KEEP_THIS_AGENTS' >"$HOME/.config/new-proj/templates/AGENTS.md"
   printf '%s\n' 'KEEP_THIS_README' >"$HOME/.config/new-proj/templates/README.md"
   "$INSTALL_SH" >/dev/null
-  assert_eq "KEEP_THIS_AGENT" "$(<"$HOME/.config/new-proj/templates/AGENT.md")"
+  assert_eq "KEEP_THIS_AGENTS" "$(<"$HOME/.config/new-proj/templates/AGENTS.md")"
   assert_eq "KEEP_THIS_README" "$(<"$HOME/.config/new-proj/templates/README.md")"
   teardown_install_home
 }
@@ -229,7 +234,7 @@ main() {
     test_creates_scaffold_and_root_readme
     test_custom_scaffold_dir_name
     test_respects_config_env_scaffold_name
-    test_seeds_agent_template_when_missing
+    test_seeds_agents_template_when_missing
     test_creates_default_gitignore_template_when_missing
     test_git_init_when_git_available
     test_prints_created_paths

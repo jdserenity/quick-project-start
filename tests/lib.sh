@@ -121,7 +121,7 @@ EOF
 }
 
 seed_standard_templates() {
-  printf '%s\n' 'custom-agent-rules' >"$NEW_PROJ_TEMPLATES_DIR/AGENT.md"
+  printf '%s\n' 'custom-agent-rules' >"$NEW_PROJ_TEMPLATES_DIR/AGENTS.md"
   printf '%s\n' 'custom-readme' >"$NEW_PROJ_TEMPLATES_DIR/README.md"
   printf '%s\n' 'custom-arch' >"$NEW_PROJ_TEMPLATES_DIR/ARCHITECTURE.md"
   printf '%s\n' 'custom-deploy' >"$NEW_PROJ_TEMPLATES_DIR/DEPLOY.md"

@@ -33,12 +33,11 @@ Creates:
 - `~/Documents/coding-temp/my-project/`
 - Git repository initialized with an `init` commit on `main`
 - Public GitHub repo (same name as the project) via `gh`, with initial push
+- root `AGENTS.md`, `README.md`, and `.gitignore`
 - scaffold folder (default `docs`) with:
-  - `AGENT.md`
   - `ARCHITECTURE.md`
   - `DEPLOY.md`
   - `TODO.md`
-- root `README.md` and `.gitignore`
 
 Requires `git` and [GitHub CLI](https://cli.github.com/) (`gh`) logged in (`gh auth login`). If either is missing or `gh repo create` fails, the local project is still created and you get a warning.
 
@@ -54,7 +53,7 @@ Global runtime config:
 Global templates:
 
 - `~/.config/new-proj/templates/`
-  - `AGENT.md`
+  - `AGENTS.md`
   - `ARCHITECTURE.md`
   - `README.md`
   - `DEPLOY.md`

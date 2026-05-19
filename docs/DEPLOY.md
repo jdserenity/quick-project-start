@@ -64,4 +64,4 @@ NEW_PROJ_BASE_DIR="/tmp/scratch" new-proj "experiment"
 | Warning: git not installed | Install Xcode CLT or `git` via Homebrew |
 | Warning: gh not authenticated | `gh auth login` |
 | Warning: failed to create GitHub repo | Repo name may already exist; local project still created under base dir |
-| Empty `AGENT.md` in new projects | Run `./install.sh` once, or populate `~/.config/new-proj/templates/AGENT.md` |
+| Empty `AGENTS.md` in new projects | Run `./install.sh` once, or populate `~/.config/new-proj/templates/AGENTS.md` |

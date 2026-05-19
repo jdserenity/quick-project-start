@@ -4,7 +4,7 @@
 
 - Bash CLI that scaffolds a new coding project under a configurable base directory (default `~/Documents/coding-temp`).
 - Each run creates a local git repo, an `init` commit on `main`, and (when `gh` is available and authenticated) a public GitHub repo with an initial push.
-- New projects get agent-oriented docs under `docs/` (or `SCAFFOLD_DIR_NAME`) plus a lean root `README.md` and `.gitignore`, copied from user templates in `~/.config/new-proj/templates/`.
+- New projects get root `AGENTS.md` and `README.md`, project docs under `docs/` (or `SCAFFOLD_DIR_NAME`), plus `.gitignore`, copied from user templates in `~/.config/new-proj/templates/`.
 - This repo (`quick-project-start`) is the versioned source for `new-proj` and `install.sh`; it is not installed in place — `install.sh` copies the script to `~/.local/bin`.
 
 ## Repository layout
@@ -13,10 +13,10 @@
 quick-project-start/
   new-proj          # CLI: create project dir, copy templates, git + gh
   install.sh        # Install new-proj globally; seed ~/.config/new-proj if missing
+  AGENTS.md         # Agent rules (repo root; Cursor convention)
   README.md         # Human-facing usage for this repo
   tests/            # ./tests/run-tests.sh
   docs/
-    AGENT.md        # Agent rules for work in this repo
     ARCHITECTURE.md # This file
     DEPLOY.md       # Install / update flow
     TODO.md         # Open decisions for this tool
@@ -28,7 +28,7 @@ quick-project-start/
 |------|------|
 | `~/.local/bin/new-proj` | Installed copy of `new-proj` (from last `./install.sh`) |
 | `~/.config/new-proj/config.env` | Defaults: `SCAFFOLD_DIR_NAME`, optional `BASE_DIR`, `TEMPLATES_DIR` |
-| `~/.config/new-proj/templates/` | `AGENT.md`, `ARCHITECTURE.md`, `README.md`, `DEPLOY.md`, `TODO.md`, `.gitignore` — copied into each new project |
+| `~/.config/new-proj/templates/` | `AGENTS.md`, `ARCHITECTURE.md`, `README.md`, `DEPLOY.md`, `TODO.md`, `.gitignore` — copied into each new project (`AGENTS.md` and `README.md` at project root; others under scaffold dir) |
 
 Per-run env overrides: `NEW_PROJ_BASE_DIR`, `NEW_PROJ_SCAFFOLD_DIR_NAME`, `NEW_PROJ_TEMPLATES_DIR`, `NEW_PROJ_CONFIG_FILE`.
 
@@ -38,10 +38,10 @@ For `new-proj "my-app"` with defaults:
 
 ```
 ~/Documents/coding-temp/my-app/
-  README.md              # from templates (project root, not under docs/)
+  AGENTS.md              # from templates (project root)
+  README.md
   .gitignore
   docs/
-    AGENT.md
     ARCHITECTURE.md      # empty template unless customized in ~/.config
     DEPLOY.md
     TODO.md
@@ -62,7 +62,7 @@ flowchart LR
     tpl["templates/"]
   end
   subgraph out["new project"]
-    root["README.md .gitignore"]
+    root["AGENTS.md README.md .gitignore"]
     scaffold["docs/*"]
     git["git init + gh repo create"]
   end
@@ -79,7 +79,7 @@ flowchart LR
 
 - **Stack**: Bash only; no runtime dependencies beyond `git` and optional `gh`.
 - **Templates live outside the repo** after first `install.sh`, so each machine can customize defaults without this repo overwriting them.
-- **This repo’s `docs/`** document this tool only; `install.sh` does not read or write them.
+- **This repo’s `docs/`** hold project docs; **`AGENTS.md` at repo root** holds agent rules. `install.sh` seeds global templates from repo `AGENTS.md` but does not modify this repo’s `docs/` on install.
 - **Tests**: `tests/run-tests.sh` uses isolated `HOME`, temp base/templates dirs, and a fake `gh` on `PATH`.
-- **`README.md` at project root** for new projects; other scaffold files stay under `docs/`.
-- **AGENT.md in `new-proj`** still embeds a fallback heredoc if global templates are empty (e.g. script copied without running `install.sh`).
+- **`AGENTS.md` and `README.md` at project root** for new projects; `ARCHITECTURE.md`, `DEPLOY.md`, and `TODO.md` stay under `docs/` (or `SCAFFOLD_DIR_NAME`).
+- **`new-proj`** seeds `AGENTS.md` from repo `AGENTS.md` when run from a checkout, else from `~/.config/new-proj/templates/`, else an embedded fallback heredoc.
