@@ -32,6 +32,22 @@ test_rejects_empty_project_name() {
   teardown_new_proj_env
 }
 
+test_rejects_unknown_option() {
+  setup_new_proj_env
+  local out=0
+  run_new_proj --nope "x" 2>&1 >/dev/null || out=$?
+  assert_eq "1" "$out"
+  teardown_new_proj_env
+}
+
+test_rejects_project_name_only_flag() {
+  setup_new_proj_env
+  local out=0
+  run_new_proj --no-repo 2>&1 >/dev/null || out=$?
+  assert_eq "1" "$out"
+  teardown_new_proj_env
+}
+
 test_rejects_missing_base_dir() {
   setup_new_proj_env
   export NEW_PROJ_BASE_DIR="$TEST_TMP/does-not-exist"
@@ -164,6 +180,24 @@ test_git_init_when_git_available() {
   teardown_new_proj_env
 }
 
+test_no_repo_skips_git() {
+  if ! command -v git >/dev/null 2>&1; then
+    echo "  SKIP: git not installed"
+    return 0
+  fi
+  setup_new_proj_env
+  seed_standard_templates
+  run_new_proj --no-repo "no-git-before" >/dev/null
+  run_new_proj "no-git-after" --no-repo >/dev/null
+
+  assert_no_file "$NEW_PROJ_BASE_DIR/no-git-before/.git"
+  assert_no_file "$NEW_PROJ_BASE_DIR/no-git-after/.git"
+  assert_file "$NEW_PROJ_BASE_DIR/no-git-before/AGENTS.md"
+  assert_file "$NEW_PROJ_BASE_DIR/no-git-after/README.md"
+
+  teardown_new_proj_env
+}
+
 test_prints_created_paths() {
   setup_new_proj_env
   seed_standard_templates
@@ -228,6 +262,8 @@ main() {
     test_usage_wrong_arg_count
     test_rejects_slash_in_project_name
     test_rejects_empty_project_name
+    test_rejects_unknown_option
+    test_rejects_project_name_only_flag
     test_rejects_missing_base_dir
     test_rejects_existing_project
     test_rejects_invalid_scaffold_dir_name
@@ -237,6 +273,7 @@ main() {
     test_seeds_agents_template_when_missing
     test_creates_default_gitignore_template_when_missing
     test_git_init_when_git_available
+    test_no_repo_skips_git
     test_prints_created_paths
     test_install_copies_new_proj_binary
     test_install_creates_config_and_templates_when_missing

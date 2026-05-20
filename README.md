@@ -26,13 +26,13 @@ git pull
 
 ```bash
 new-proj "my-project"
+new-proj --no-repo "my-project"   # files only; skip git init and GitHub
 ```
 
 Creates:
 
 - `~/Documents/coding-temp/my-project/`
-- Git repository initialized with an `init` commit on `main`
-- Public GitHub repo (same name as the project) via `gh`, with initial push
+- By default: git repository initialized with an `init` commit on `main`, and a public GitHub repo (same name as the project) via `gh`, with initial push
 - root `AGENTS.md`, `README.md`, and `.gitignore`
 - scaffold folder (default `docs`) with:
   - `ARCHITECTURE.md`

@@ -2,15 +2,57 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: new-proj \"project-name\""
+  echo "Usage: new-proj [--no-repo] \"project-name\""
 }
 
-if [[ $# -ne 1 ]]; then
-  usage
+no_repo=0
+project_name=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --no-repo)
+      no_repo=1
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      echo "Error: unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+    *)
+      if [[ -n "$project_name" ]]; then
+        echo "Error: unexpected argument: $1" >&2
+        usage >&2
+        exit 1
+      fi
+      project_name="$1"
+      shift
+      ;;
+  esac
+done
+
+while [[ $# -gt 0 ]]; do
+  if [[ -n "$project_name" ]]; then
+    echo "Error: unexpected argument: $1" >&2
+    usage >&2
+    exit 1
+  fi
+  project_name="$1"
+  shift
+done
+
+if [[ -z "$project_name" ]]; then
+  usage >&2
   exit 1
 fi
-
-project_name="$1"
 if [[ -z "$project_name" || "$project_name" == */* ]]; then
   echo "Error: project name must be a single directory name." >&2
   exit 1
@@ -189,7 +231,9 @@ setup_git_and_github() {
   fi
 }
 
-setup_git_and_github
+if [[ "$no_repo" -eq 0 ]]; then
+  setup_git_and_github
+fi
 
 echo "Created project: $project_dir"
 echo "Scaffold folder: $scaffold_dir"
