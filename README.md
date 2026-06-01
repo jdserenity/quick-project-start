@@ -27,6 +27,8 @@ git pull
 ```bash
 new-proj "my-project"
 new-proj --no-repo "my-project"   # files only; skip git init and GitHub
+cd /path/to/existing-project
+new-proj --existing          # add AGENTS.md + docs/ here; keep existing README.md
 ```
 
 Creates:

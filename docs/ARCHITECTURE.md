@@ -4,6 +4,7 @@
 
 - Bash CLI that scaffolds a new coding project under a configurable base directory (default `~/Documents/coding-temp`).
 - Each run scaffolds files from templates. By default it also creates a local git repo, an `init` commit on `main`, and (when `gh` is available and authenticated) a public GitHub repo with an initial push. Pass `--no-repo` to skip all git/GitHub steps.
+- Pass `--existing` from inside an existing project directory to copy `AGENTS.md` and scaffold docs into the current folder; skips git/GitHub; does not overwrite an existing root `README.md` or `.gitignore`.
 - New projects get root `AGENTS.md` and `README.md`, project docs under `docs/` (or `SCAFFOLD_DIR_NAME`), plus `.gitignore`, copied from user templates in `~/.config/new-proj/templates/`.
 - This repo (`quick-project-start`) is the versioned source for `new-proj` and `install.sh`; it is not installed in place — `install.sh` copies the script to `~/.local/bin`.
 
@@ -83,3 +84,4 @@ flowchart LR
 - **Tests**: `tests/run-tests.sh` uses isolated `HOME`, temp base/templates dirs, and a fake `gh` on `PATH`.
 - **`AGENTS.md` and `README.md` at project root** for new projects; `ARCHITECTURE.md`, `DEPLOY.md`, and `TODO.md` stay under `docs/` (or `SCAFFOLD_DIR_NAME`).
 - **`new-proj`** seeds `AGENTS.md` from repo `AGENTS.md` when run from a checkout, else from `~/.config/new-proj/templates/`, else an embedded fallback heredoc.
+- **`--existing`**: target is `pwd`; no project name required; never runs git/GitHub setup.

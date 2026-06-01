@@ -208,6 +208,85 @@ test_prints_created_paths() {
   teardown_new_proj_env
 }
 
+test_existing_inserts_docs_and_agents() {
+  setup_new_proj_env
+  seed_standard_templates
+  local root="$TEST_TMP/existing"
+  mkdir -p "$root"
+  printf '%s\n' 'keep-readme' >"$root/README.md"
+  printf '%s\n' 'keep-ignore' >"$root/.gitignore"
+  (
+    cd "$root"
+    run_new_proj --existing >/dev/null
+  )
+
+  assert_eq "keep-readme" "$(tr -d '\n' <"$root/README.md")"
+  assert_eq "keep-ignore" "$(tr -d '\n' <"$root/.gitignore")"
+  assert_eq "custom-agent-rules" "$(tr -d '\n' <"$root/AGENTS.md")"
+  assert_eq "custom-arch" "$(tr -d '\n' <"$root/docs/ARCHITECTURE.md")"
+  assert_eq "custom-deploy" "$(tr -d '\n' <"$root/docs/DEPLOY.md")"
+  assert_eq "custom-todo" "$(tr -d '\n' <"$root/docs/TODO.md")"
+  assert_no_file "$root/docs/README.md"
+
+  teardown_new_proj_env
+}
+
+test_existing_adds_readme_when_missing() {
+  setup_new_proj_env
+  seed_standard_templates
+  local root="$TEST_TMP/bare"
+  mkdir -p "$root"
+  (
+    cd "$root"
+    run_new_proj --existing >/dev/null
+  )
+
+  assert_eq "custom-readme" "$(tr -d '\n' <"$root/README.md")"
+  assert_eq "custom-agent-rules" "$(tr -d '\n' <"$root/AGENTS.md")"
+
+  teardown_new_proj_env
+}
+
+test_existing_skips_git() {
+  if ! command -v git >/dev/null 2>&1; then
+    echo "  SKIP: git not installed"
+    return 0
+  fi
+  setup_new_proj_env
+  seed_standard_templates
+  local root="$TEST_TMP/has-git"
+  mkdir -p "$root"
+  git -C "$root" init >/dev/null
+  printf '%s\n' 'before' >"$root/foo.txt"
+  git -C "$root" add foo.txt >/dev/null
+  git -C "$root" commit -m "before" >/dev/null
+  (
+    cd "$root"
+    run_new_proj --existing >/dev/null
+  )
+
+  assert_eq "before" "$(git -C "$root" log -1 --format=%s)" "no new commit from scaffold"
+  assert_eq "1" "$(git -C "$root" rev-list --count HEAD)"
+  assert_file "$root/AGENTS.md"
+
+  teardown_new_proj_env
+}
+
+test_existing_prints_insert_message() {
+  setup_new_proj_env
+  seed_standard_templates
+  local root="$TEST_TMP/msg"
+  mkdir -p "$root"
+  local output
+  output="$(
+    cd "$root"
+    run_new_proj --existing
+  )"
+  assert_contains "$output" "Inserted docs scaffold into: $root"
+  assert_contains "$output" "Scaffold folder: $root/docs"
+  teardown_new_proj_env
+}
+
 # --- install.sh ---
 
 test_install_copies_new_proj_binary() {
@@ -275,6 +354,10 @@ main() {
     test_git_init_when_git_available
     test_no_repo_skips_git
     test_prints_created_paths
+    test_existing_inserts_docs_and_agents
+    test_existing_adds_readme_when_missing
+    test_existing_skips_git
+    test_existing_prints_insert_message
     test_install_copies_new_proj_binary
     test_install_creates_config_and_templates_when_missing
     test_install_does_not_overwrite_existing_templates
