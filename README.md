@@ -25,11 +25,15 @@ git pull
 ## Usage
 
 ```bash
-new-proj "my-project"
-new-proj --no-repo "my-project"   # files only; skip git init and GitHub
+new-proj "my-project"              # creates project; cd into it (with shell integration)
+new-proj --no-repo "my-project"    # files only; skip git init and GitHub; still cds
 cd /path/to/existing-project
-new-proj --existing          # add AGENTS.md + docs/ here; keep existing README.md
+new-proj --existing                # add AGENTS.md + docs/ here; keep existing README.md; no cd
 ```
+
+`./install.sh` adds shell integration to `~/.zshrc` (once). Run `source ~/.zshrc` or open a new terminal so `new-proj` can change directory in your shell.
+
+Without integration loaded, the command only prints a `cd` line; run `eval "$(new-proj "my-project" 2>/dev/null)"` instead.
 
 Creates:
 

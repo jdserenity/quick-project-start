@@ -201,10 +201,55 @@ test_no_repo_skips_git() {
 test_prints_created_paths() {
   setup_new_proj_env
   seed_standard_templates
-  local output
-  output="$(run_new_proj "eta")"
-  assert_contains "$output" "Created project: $NEW_PROJ_BASE_DIR/eta"
-  assert_contains "$output" "Scaffold folder: $NEW_PROJ_BASE_DIR/eta/docs"
+  local stderr stdout
+  stderr="$(run_new_proj "eta" 2>&1 >/dev/null)"
+  stdout="$(run_new_proj "eta-print" 2>/dev/null)"
+  assert_contains "$stderr" "Created project: $NEW_PROJ_BASE_DIR/eta"
+  assert_contains "$stderr" "Scaffold folder: $NEW_PROJ_BASE_DIR/eta/docs"
+  assert_eq "cd $NEW_PROJ_BASE_DIR/eta-print" "$stdout"
+  teardown_new_proj_env
+}
+
+test_cds_into_new_project() {
+  setup_new_proj_env
+  seed_standard_templates
+  local after
+  after="$(
+    cd "$TEST_TMP"
+    eval "$(run_new_proj "cd-normal" 2>/dev/null)"
+    pwd
+  )"
+  assert_eq "$NEW_PROJ_BASE_DIR/cd-normal" "$after"
+  teardown_new_proj_env
+}
+
+test_no_repo_cds_into_new_project() {
+  setup_new_proj_env
+  seed_standard_templates
+  local after
+  after="$(
+    cd "$TEST_TMP"
+    eval "$(run_new_proj --no-repo "cd-norepo" 2>/dev/null)"
+    pwd
+  )"
+  assert_eq "$NEW_PROJ_BASE_DIR/cd-norepo" "$after"
+  teardown_new_proj_env
+}
+
+test_existing_does_not_emit_cd() {
+  setup_new_proj_env
+  seed_standard_templates
+  local root="$TEST_TMP/no-cd" stdout_file pwd_file
+  stdout_file="$TEST_TMP/existing-stdout"
+  pwd_file="$TEST_TMP/existing-pwd"
+  mkdir -p "$root/sub"
+  (
+    cd "$root/sub"
+    run_new_proj --existing 2>/dev/null >"$stdout_file"
+    pwd >"$pwd_file"
+  )
+  assert_eq "" "$(<"$stdout_file")"
+  assert_eq "$root/sub" "$(<"$pwd_file")"
   teardown_new_proj_env
 }
 
@@ -277,13 +322,13 @@ test_existing_prints_insert_message() {
   seed_standard_templates
   local root="$TEST_TMP/msg"
   mkdir -p "$root"
-  local output
-  output="$(
+  local stderr
+  stderr="$(
     cd "$root"
-    run_new_proj --existing
+    run_new_proj --existing 2>&1 >/dev/null
   )"
-  assert_contains "$output" "Inserted docs scaffold into: $root"
-  assert_contains "$output" "Scaffold folder: $root/docs"
+  assert_contains "$stderr" "Inserted docs scaffold into: $root"
+  assert_contains "$stderr" "Scaffold folder: $root/docs"
   teardown_new_proj_env
 }
 
@@ -294,6 +339,42 @@ test_install_copies_new_proj_binary() {
   "$INSTALL_SH" >/dev/null
   assert_file "$HOME/.local/bin/new-proj"
   assert_true "$([[ -x "$HOME/.local/bin/new-proj" ]] && echo 1)" "binary is executable"
+  assert_file "$HOME/.config/new-proj/shell-integration.zsh"
+  teardown_install_home
+}
+
+test_install_adds_shell_integration_to_zshrc() {
+  setup_install_home
+  : >"$HOME/.zshrc"
+  "$INSTALL_SH" >/dev/null
+  local zshrc
+  zshrc="$(<"$HOME/.zshrc")"
+  assert_contains "$zshrc" "# new-proj shell integration (install.sh)"
+  assert_contains "$zshrc" "shell-integration.zsh"
+  teardown_install_home
+}
+
+test_install_does_not_duplicate_zshrc_entry() {
+  setup_install_home
+  printf '%s\n' '# new-proj shell integration (install.sh)' 'source "x"' >"$HOME/.zshrc"
+  local before
+  before="$(<"$HOME/.zshrc")"
+  "$INSTALL_SH" >/dev/null
+  assert_eq "$before" "$(<"$HOME/.zshrc")"
+  teardown_install_home
+}
+
+test_shell_integration_loads_in_zsh() {
+  zsh -f -c "source '$ROOT/templates/shell-integration.zsh'; whence new-proj" >/dev/null
+}
+
+test_install_skips_when_source_line_elsewhere_in_zshrc() {
+  setup_install_home
+  printf '%s\n' 'export PATH=/bin' 'source "$HOME/.config/new-proj/shell-integration.zsh"' 'alias ll=ls -l' >"$HOME/.zshrc"
+  local before
+  before="$(<"$HOME/.zshrc")"
+  "$INSTALL_SH" >/dev/null
+  assert_eq "$before" "$(<"$HOME/.zshrc")"
   teardown_install_home
 }
 
@@ -354,11 +435,18 @@ main() {
     test_git_init_when_git_available
     test_no_repo_skips_git
     test_prints_created_paths
+    test_cds_into_new_project
+    test_no_repo_cds_into_new_project
+    test_existing_does_not_emit_cd
     test_existing_inserts_docs_and_agents
     test_existing_adds_readme_when_missing
     test_existing_skips_git
     test_existing_prints_insert_message
     test_install_copies_new_proj_binary
+    test_install_adds_shell_integration_to_zshrc
+    test_shell_integration_loads_in_zsh
+    test_install_does_not_duplicate_zshrc_entry
+    test_install_skips_when_source_line_elsewhere_in_zshrc
     test_install_creates_config_and_templates_when_missing
     test_install_does_not_overwrite_existing_templates
     test_install_does_not_modify_repo_docs

@@ -66,9 +66,47 @@ __pycache__/
 EOF
 fi
 
+shell_integration="$config_dir/shell-integration.zsh"
+shell_integration_marker="# new-proj shell integration (install.sh)"
+if [[ -f "$script_dir/templates/shell-integration.zsh" ]]; then
+  install -m 0644 "$script_dir/templates/shell-integration.zsh" "$shell_integration"
+else
+  echo "Warning: missing $script_dir/templates/shell-integration.zsh; skipped shell integration." >&2
+fi
+
+install_shell_integration_zshrc() {
+  local integration_file="$1"
+  local zshrc="$HOME/.zshrc"
+  if [[ ! -f "$integration_file" ]]; then
+    return 0
+  fi
+  # Fixed-string grep only (no zsh parsing). Skip append if marker or source line exists anywhere in the file.
+  if [[ -f "$zshrc" ]] && {
+    grep -qF "$shell_integration_marker" "$zshrc" ||
+    grep -qF 'new-proj/shell-integration.zsh' "$zshrc"
+  }; then
+    echo "Shell integration: already in ~/.zshrc"
+    return 0
+  fi
+  if [[ ! -f "$zshrc" ]]; then
+    touch "$zshrc"
+  fi
+  {
+    echo ""
+    echo "$shell_integration_marker"
+    printf 'source %q\n' "$integration_file"
+  } >>"$zshrc"
+  echo "Shell integration: added to ~/.zshrc"
+}
+
 echo "Installed: $target_script"
 echo "Config: $config_file"
 echo "Templates: $templates_dir"
+if [[ -f "$shell_integration" ]]; then
+  echo "Shell integration: $shell_integration"
+  install_shell_integration_zshrc "$shell_integration"
+  echo "  Run: source ~/.zshrc   (or open a new terminal) so new-proj cds into new projects"
+fi
 
 if ! command -v new-proj >/dev/null 2>&1; then
   echo 'Note: `new-proj` is not on PATH in this shell yet.'
