@@ -292,7 +292,7 @@ test_existing_adds_readme_when_missing() {
   teardown_new_proj_env
 }
 
-test_existing_skips_git() {
+test_existing_no_repo_skips_git() {
   if ! command -v git >/dev/null 2>&1; then
     echo "  SKIP: git not installed"
     return 0
@@ -307,13 +307,84 @@ test_existing_skips_git() {
   git -C "$root" commit -m "before" >/dev/null
   (
     cd "$root"
-    run_new_proj --existing >/dev/null
+    run_new_proj --existing --no-repo >/dev/null
   )
 
   assert_eq "before" "$(git -C "$root" log -1 --format=%s)" "no new commit from scaffold"
   assert_eq "1" "$(git -C "$root" rev-list --count HEAD)"
   assert_file "$root/AGENTS.md"
 
+  teardown_new_proj_env
+}
+
+test_existing_init_git_when_missing() {
+  if ! command -v git >/dev/null 2>&1; then
+    echo "  SKIP: git not installed"
+    return 0
+  fi
+  setup_new_proj_env
+  seed_standard_templates
+  local root="$TEST_TMP/no-git"
+  mkdir -p "$root"
+  (
+    cd "$root"
+    run_new_proj --existing >/dev/null
+  )
+
+  assert_true "$([[ -d "$root/.git" ]] && echo 1)" "git dir exists"
+  assert_eq "init" "$(git -C "$root" log -1 --format=%s)"
+  assert_file "$root/AGENTS.md"
+
+  teardown_new_proj_env
+}
+
+test_existing_commits_scaffold_when_git_exists() {
+  if ! command -v git >/dev/null 2>&1; then
+    echo "  SKIP: git not installed"
+    return 0
+  fi
+  setup_new_proj_env
+  seed_standard_templates
+  local root="$TEST_TMP/has-git-commit"
+  mkdir -p "$root"
+  git -C "$root" init >/dev/null
+  printf '%s\n' 'before' >"$root/foo.txt"
+  git -C "$root" add foo.txt >/dev/null
+  git -C "$root" commit -m "before" >/dev/null
+  (
+    cd "$root"
+    run_new_proj --existing >/dev/null
+  )
+
+  assert_eq "Add docs scaffold" "$(git -C "$root" log -1 --format=%s)"
+  assert_eq "2" "$(git -C "$root" rev-list --count HEAD)"
+  assert_file "$root/AGENTS.md"
+
+  teardown_new_proj_env
+}
+
+test_existing_creates_github_repo() {
+  setup_new_proj_env
+  seed_standard_templates
+  local root="$TEST_TMP/gh-existing" log="$TEST_TMP/gh-calls.log"
+  mkdir -p "$root"
+  cat >"$TEST_TMP/fake-bin/gh" <<EOF
+#!/usr/bin/env bash
+if [[ "\${1:-}" == "auth" && "\${2:-}" == "status" ]]; then exit 0; fi
+if [[ "\${1:-}" == "repo" && "\${2:-}" == "create" ]]; then
+  echo "\$*" >> "$log"
+  exit 0
+fi
+exit 1
+EOF
+  chmod +x "$TEST_TMP/fake-bin/gh"
+  (
+    cd "$root"
+    run_new_proj --existing >/dev/null
+  )
+
+  assert_file "$log"
+  assert_contains "$(<"$log")" "repo create gh-existing"
   teardown_new_proj_env
 }
 
@@ -440,7 +511,10 @@ main() {
     test_existing_does_not_emit_cd
     test_existing_inserts_docs_and_agents
     test_existing_adds_readme_when_missing
-    test_existing_skips_git
+    test_existing_no_repo_skips_git
+    test_existing_init_git_when_missing
+    test_existing_commits_scaffold_when_git_exists
+    test_existing_creates_github_repo
     test_existing_prints_insert_message
     test_install_copies_new_proj_binary
     test_install_adds_shell_integration_to_zshrc
