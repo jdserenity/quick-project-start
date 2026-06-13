@@ -85,4 +85,4 @@ flowchart LR
 - **Tests**: `tests/run-tests.sh` uses isolated `HOME`, temp base/templates dirs, and a fake `gh` on `PATH`.
 - **`AGENTS.md` and `README.md` at project root** for new projects; `ARCHITECTURE.md`, `DEPLOY.md`, and `TODO.md` stay under `docs/` (or `SCAFFOLD_DIR_NAME`).
 - **`new-proj`** seeds `AGENTS.md` from repo `AGENTS.md` when run from a checkout, else from `~/.config/new-proj/templates/`, else an embedded fallback heredoc.
-- **`--existing`**: target is `pwd`; no project name required (GitHub repo name defaults to directory basename); runs git/GitHub unless `--no-repo`.
+- **`--existing`**: target is `pwd`; no project name required (GitHub repo name defaults to directory basename); runs git/GitHub unless `--no-repo`; skips `gh repo create` when `origin` is already set or the named GitHub repo already exists (links origin and pushes instead).

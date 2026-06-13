@@ -371,6 +371,7 @@ test_existing_creates_github_repo() {
   cat >"$TEST_TMP/fake-bin/gh" <<EOF
 #!/usr/bin/env bash
 if [[ "\${1:-}" == "auth" && "\${2:-}" == "status" ]]; then exit 0; fi
+if [[ "\${1:-}" == "repo" && "\${2:-}" == "view" ]]; then exit 1; fi
 if [[ "\${1:-}" == "repo" && "\${2:-}" == "create" ]]; then
   echo "\$*" >> "$log"
   exit 0
@@ -386,6 +387,109 @@ EOF
   assert_file "$log"
   assert_contains "$(<"$log")" "repo create gh-existing"
   teardown_new_proj_env
+}
+
+test_existing_skips_gh_when_origin_exists() {
+  if ! command -v git >/dev/null 2>&1; then
+    echo "  SKIP: git not installed"
+    return 0
+  fi
+  setup_new_proj_env
+  seed_standard_templates
+  local root="$TEST_TMP/has-origin" log="$TEST_TMP/gh-calls.log"
+  mkdir -p "$root"
+  git -C "$root" init -q
+  git -C "$root" branch -M main
+  printf '%s\n' 'before' >"$root/foo.txt"
+  git -C "$root" add foo.txt >/dev/null
+  git -C "$root" commit -m "before" >/dev/null
+  git -C "$root" remote add origin "https://github.com/example/existing.git"
+  : >"$log"
+  cat >"$TEST_TMP/fake-bin/gh" <<EOF
+#!/usr/bin/env bash
+echo "\$*" >> "$log"
+exit 1
+EOF
+  chmod +x "$TEST_TMP/fake-bin/gh"
+  local stderr
+  stderr="$(
+    cd "$root"
+    run_new_proj --existing 2>&1 >/dev/null
+  )"
+  assert_eq "" "$(<"$log")" "gh should not run when origin exists"
+  assert_contains "$stderr" "Remote origin already set"
+  teardown_new_proj_env
+}
+
+test_existing_links_github_repo_without_create() {
+  if ! command -v git >/dev/null 2>&1; then
+    echo "  SKIP: git not installed"
+    return 0
+  fi
+  setup_new_proj_env
+  seed_standard_templates
+  local root="$TEST_TMP/gh-link" log="$TEST_TMP/gh-calls.log"
+  mkdir -p "$root"
+  : >"$log"
+  cat >"$TEST_TMP/fake-bin/gh" <<EOF
+#!/usr/bin/env bash
+if [[ "\${1:-}" == "auth" && "\${2:-}" == "status" ]]; then exit 0; fi
+if [[ "\${1:-}" == "repo" && "\${2:-}" == "view" ]]; then
+  if [[ "\${7:-}" == ".url" ]]; then
+    echo "https://github.com/test/gh-link"
+  elif [[ "\${4:-}" == "--json" || "\${3:-}" == "--json" ]]; then
+    echo '{"url":"https://github.com/test/gh-link"}'
+  fi
+  exit 0
+fi
+if [[ "\${1:-}" == "repo" && "\${2:-}" == "create" ]]; then
+  echo "create \$*" >> "$log"
+  exit 0
+fi
+exit 1
+EOF
+  chmod +x "$TEST_TMP/fake-bin/gh"
+  local stderr
+  stderr="$(
+    cd "$root"
+    run_new_proj --existing 2>&1 >/dev/null
+  )"
+  assert_eq "" "$(<"$log")" "gh repo create should not run when repo already exists"
+  assert_contains "$stderr" "already exists"
+  assert_eq "https://github.com/test/gh-link" "$(git -C "$root" remote get-url origin)"
+  teardown_new_proj_env
+}
+
+test_existing_pushes_when_origin_is_local_bare() {
+  if ! command -v git >/dev/null 2>&1; then
+    echo "  SKIP: git not installed"
+    return 0
+  fi
+  setup_new_proj_env
+  seed_standard_templates
+  local root="$TEST_TMP/push-origin" bare="$TEST_TMP/bare.git"
+  git init --bare -q "$bare"
+  mkdir -p "$root"
+  git -C "$root" init -q
+  git -C "$root" branch -M main
+  printf '%s\n' 'before' >"$root/foo.txt"
+  git -C "$root" add foo.txt >/dev/null
+  git -C "$root" commit -m "before" >/dev/null
+  git -C "$root" remote add origin "$bare"
+  local stderr
+  stderr="$(
+    cd "$root"
+    run_new_proj --existing 2>&1 >/dev/null
+  )"
+  assert_contains "$stderr" "Push complete"
+  assert_eq "2" "$(git -C "$bare" rev-list --count main)"
+  teardown_new_proj_env
+}
+
+test_shell_integration_streams_stderr() {
+  local src
+  src="$(<"$ROOT/templates/shell-integration.zsh")"
+  assert_contains "$src" '2>&3)" 3>&2'
 }
 
 test_existing_prints_insert_message() {
@@ -515,6 +619,10 @@ main() {
     test_existing_init_git_when_missing
     test_existing_commits_scaffold_when_git_exists
     test_existing_creates_github_repo
+    test_existing_skips_gh_when_origin_exists
+    test_existing_links_github_repo_without_create
+    test_existing_pushes_when_origin_is_local_bare
+    test_shell_integration_streams_stderr
     test_existing_prints_insert_message
     test_install_copies_new_proj_binary
     test_install_adds_shell_integration_to_zshrc
