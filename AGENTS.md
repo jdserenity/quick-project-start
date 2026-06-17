@@ -13,6 +13,14 @@ Documentation layout (read this first)
 - Do not create a CLAUDE.md file. And if you find one, delete it and put whatever was valuable in its proper file.
 
 Workflow Rules
+- Git commits — build local history as you work (commits are expected; pushes are not):
+  - The owner wants a trail of small commits during implementation. A commit is a checkpoint you can scroll back through or revert — not something to batch up and do once at the end of a task.
+  - Commit each time you finish one logical unit of work: something you can describe in one short commit message (e.g. "add user model", "wire login route to session", "add tests for login validation"). A multi-step feature usually becomes several commits; how many depends on the work, not a fixed count.
+  - Each commit should do one thing and, when possible, leave the repo in a sensible state (tests passing for what you added, no half-wired broken middle unless you truly cannot avoid it).
+  - Do not defer an entire feature into one mega-commit at the end. Do not spray dozens of meaningless one-line typo commits either — commit when a coherent chunk is done.
+  - Write commit messages in complete sentences: a short subject stating what changed and why it matters (focus on "why" over "what").
+  - Create commits without being asked — that is normal on this project. Only push when the user explicitly asks; never push on your own.
+  - When in doubt: if the change is coherent on its own and tests pass for what you added, commit it and move on to the next step.
 - When the user states product scope, business rules, stack preferences, or other durable facts in conversation, write confirmed items to the right doc: product and system intent go in docs/ARCHITECTURE.md immediately. For unresolved work, open questions, and decisions still to be made, propose docs/TODO.md entries and add them after the owner approves. Do not park product specification in AGENTS.md.
 - docs/ARCHITECTURE.md must contain only confirmed facts/decisions. Do not write TBDs, open questions, or speculative options there; put all undecided items in docs/TODO.md only.
 - NEVER EVER GREP THE ENTIRE CODEBASE IF READING docs/ARCHITECTURE.md WOULD SUFFICE. YOU WASTE MY FUCKING TOKENS LIKE YOU DON'T KNOW THEY COST MONEY. I DON'T EVER WANT TO SEE THAT AGAIN UNLESS ABSOLUTELY NECESSARY.

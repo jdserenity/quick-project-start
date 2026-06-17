@@ -507,6 +507,70 @@ test_existing_prints_insert_message() {
   teardown_new_proj_env
 }
 
+test_agent_upgrade_replaces_agents_in_cwd() {
+  setup_new_proj_env
+  local root="$TEST_TMP/upgrade" checkout="$TEST_TMP/checkout"
+  mkdir -p "$root" "$checkout"
+  cp "$NEW_PROJ" "$checkout/new-proj"
+  printf '%s\n' 'fresh-from-repo' >"$checkout/AGENTS.md"
+  printf '%s\n' 'stale-agent-rules' >"$root/AGENTS.md"
+  local stderr
+  stderr="$(
+    cd "$root"
+    "$checkout/new-proj" --agent-upgrade 2>&1 >/dev/null
+  )"
+  assert_contains "$stderr" "Updated AGENTS.md in: $root"
+  assert_contains "$(<"$root/AGENTS.md")" "fresh-from-repo"
+  assert_no_file "$root/docs/ARCHITECTURE.md"
+  teardown_new_proj_env
+}
+
+test_agent_upgrade_uses_bundled_when_not_in_checkout() {
+  setup_new_proj_env
+  local root="$TEST_TMP/bundled-upgrade" bin_only="$TEST_TMP/bin-only"
+  export HOME="$TEST_TMP/home"
+  mkdir -p "$root" "$bin_only" "$HOME/.config/new-proj/bundled"
+  cp "$NEW_PROJ" "$bin_only/new-proj"
+  printf '%s\n' 'stale-agent-rules' >"$root/AGENTS.md"
+  printf '%s\n' 'bundled-agents' >"$HOME/.config/new-proj/bundled/AGENTS.md"
+  local stderr
+  stderr="$(
+    cd "$root"
+    "$bin_only/new-proj" --agent-upgrade 2>&1 >/dev/null
+  )"
+  assert_contains "$stderr" "Updated AGENTS.md in: $root"
+  assert_eq "bundled-agents" "$(tr -d '\n' <"$root/AGENTS.md")"
+  teardown_new_proj_env
+}
+
+test_agent_upgrade_rejects_extra_args() {
+  setup_new_proj_env
+  local out=0
+  run_new_proj --agent-upgrade "x" 2>&1 >/dev/null || out=$?
+  assert_eq "1" "$out"
+  teardown_new_proj_env
+}
+
+test_agent_upgrade_rejects_combined_flags() {
+  setup_new_proj_env
+  local out=0
+  run_new_proj --agent-upgrade --existing 2>&1 >/dev/null || out=$?
+  assert_eq "1" "$out"
+  teardown_new_proj_env
+}
+
+test_install_refreshes_bundled_agents() {
+  setup_install_home
+  mkdir -p "$HOME/.config/new-proj/bundled"
+  printf '%s\n' 'old-bundled' >"$HOME/.config/new-proj/bundled/AGENTS.md"
+  "$INSTALL_SH" >/dev/null
+  local bundled
+  bundled="$(<"$HOME/.config/new-proj/bundled/AGENTS.md")"
+  assert_contains "$bundled" "Indentation: 2 spaces"
+  assert_contains "$bundled" "Create commits without being asked"
+  teardown_install_home
+}
+
 # --- install.sh ---
 
 test_install_copies_new_proj_binary() {
@@ -624,6 +688,11 @@ main() {
     test_existing_pushes_when_origin_is_local_bare
     test_shell_integration_streams_stderr
     test_existing_prints_insert_message
+    test_agent_upgrade_replaces_agents_in_cwd
+    test_agent_upgrade_uses_bundled_when_not_in_checkout
+    test_agent_upgrade_rejects_extra_args
+    test_agent_upgrade_rejects_combined_flags
+    test_install_refreshes_bundled_agents
     test_install_copies_new_proj_binary
     test_install_adds_shell_integration_to_zshrc
     test_shell_integration_loads_in_zsh

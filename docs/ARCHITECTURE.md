@@ -5,6 +5,7 @@
 - Bash CLI that scaffolds a new coding project under a configurable base directory (default `~/Documents/coding-temp`).
 - Each run scaffolds files from templates. By default it also creates a local git repo, an `init` commit on `main`, and (when `gh` is available and authenticated) a public GitHub repo with an initial push. Pass `--no-repo` to skip all git/GitHub steps.
 - Pass `--existing` from inside an existing project directory to copy `AGENTS.md` and scaffold docs into the current folder; by default also runs git/GitHub setup (init if needed, commit scaffold, `gh repo create` named after the directory unless a project name is passed); pass `--no-repo` to skip git/GitHub; does not overwrite an existing root `README.md` or `.gitignore`; does not change the shell cwd.
+- Pass `--agent-upgrade` from inside an existing project to overwrite root `AGENTS.md` with the newest bundled template (`new-proj` checkout `AGENTS.md`, else `~/.config/new-proj/bundled/AGENTS.md` from last `install.sh`, else embedded fallback). No scaffold, git, GitHub, or `cd`.
 - Normal and `--no-repo` runs print a `cd` command on stdout (status on stderr). `install.sh` installs `~/.config/new-proj/shell-integration.zsh` and appends a `source` line to `~/.zshrc` when missing; that wrapper runs the binary and `eval`s the `cd` line in the interactive shell.
 - New projects get root `AGENTS.md` and `README.md`, project docs under `docs/` (or `SCAFFOLD_DIR_NAME`), plus `.gitignore`, copied from user templates in `~/.config/new-proj/templates/`.
 - This repo (`quick-project-start`) is the versioned source for `new-proj` and `install.sh`; it is not installed in place — `install.sh` copies the script to `~/.local/bin`.
@@ -31,6 +32,7 @@ quick-project-start/
 | `~/.local/bin/new-proj` | Installed copy of `new-proj` (from last `./install.sh`) |
 | `~/.config/new-proj/config.env` | Defaults: `SCAFFOLD_DIR_NAME`, optional `BASE_DIR`, `TEMPLATES_DIR` |
 | `~/.config/new-proj/templates/` | `AGENTS.md`, `ARCHITECTURE.md`, `README.md`, `DEPLOY.md`, `TODO.md`, `.gitignore` — copied into each new project (`AGENTS.md` and `README.md` at project root; others under scaffold dir) |
+| `~/.config/new-proj/bundled/AGENTS.md` | Refreshed on every `./install.sh`; source for `new-proj --agent-upgrade` when not running from a checkout |
 
 Per-run env overrides: `NEW_PROJ_BASE_DIR`, `NEW_PROJ_SCAFFOLD_DIR_NAME`, `NEW_PROJ_TEMPLATES_DIR`, `NEW_PROJ_CONFIG_FILE`.
 

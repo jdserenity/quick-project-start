@@ -19,6 +19,11 @@ mkdir -p "$target_dir"
 install -m 0755 "$source_script" "$target_script"
 
 mkdir -p "$templates_dir"
+bundled_dir="$config_dir/bundled"
+mkdir -p "$bundled_dir"
+if [[ -f "$script_dir/AGENTS.md" ]]; then
+  cp "$script_dir/AGENTS.md" "$bundled_dir/AGENTS.md"
+fi
 
 if [[ ! -f "$config_file" ]]; then
   cat <<'EOF' >"$config_file"

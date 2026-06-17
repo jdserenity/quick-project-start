@@ -36,7 +36,7 @@ git pull
 ./install.sh
 ```
 
-`install.sh` refreshes `~/.local/bin/new-proj` but does not overwrite existing global templates.
+`install.sh` refreshes `~/.local/bin/new-proj` and `~/.config/new-proj/bundled/AGENTS.md` but does not overwrite existing global templates.
 
 To change what new projects receive, edit files under `~/.config/new-proj/templates/` directly.
 
