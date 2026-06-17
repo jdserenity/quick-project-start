@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   echo "Usage: new-proj [--no-repo] [--existing] \"project-name\""
   echo "       new-proj --existing   # scaffold into current directory"
-  echo "       new-proj --agent-upgrade   # replace ./AGENTS.md with newest template"
+  echo "       new-proj --agent-upgrade   # replace project-root AGENTS.md with newest template"
 }
 
 no_repo=0
@@ -82,6 +82,28 @@ config_dir="$HOME/.config/new-proj"
 bundled_agents="$config_dir/bundled/AGENTS.md"
 config_file="${NEW_PROJ_CONFIG_FILE:-$config_dir/config.env}"
 
+find_project_root() {
+  local start="$1"
+  local root=""
+  if command -v git >/dev/null 2>&1 && git -C "$start" rev-parse --show-toplevel >/dev/null 2>&1; then
+    root="$(git -C "$start" rev-parse --show-toplevel)"
+  else
+    local cur="$start"
+    while [[ "$cur" != "/" ]]; do
+      if [[ -f "$cur/AGENTS.md" ]]; then
+        root="$cur"
+        break
+      fi
+      cur="$(dirname "$cur")"
+    done
+  fi
+  if [[ -z "$root" ]]; then
+    echo "Error: could not find project root (not in a git repository and no AGENTS.md above current directory)." >&2
+    return 1
+  fi
+  (cd "$root" && pwd -P)
+}
+
 write_agents_template_to() {
   local dest="$1"
   local script_dir
@@ -154,7 +176,7 @@ EOF
 }
 
 if [[ "$agent_upgrade" -eq 1 ]]; then
-  project_dir="$(pwd)"
+  project_dir="$(find_project_root "$(pwd)")"
   write_agents_template_to "$project_dir/AGENTS.md"
   echo "Updated AGENTS.md in: $project_dir" >&2
   exit 0

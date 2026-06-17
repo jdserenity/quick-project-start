@@ -507,21 +507,75 @@ test_existing_prints_insert_message() {
   teardown_new_proj_env
 }
 
-test_agent_upgrade_replaces_agents_in_cwd() {
+test_agent_upgrade_replaces_agents_at_repo_root() {
   setup_new_proj_env
   local root="$TEST_TMP/upgrade" checkout="$TEST_TMP/checkout"
   mkdir -p "$root" "$checkout"
   cp "$NEW_PROJ" "$checkout/new-proj"
   printf '%s\n' 'fresh-from-repo' >"$checkout/AGENTS.md"
   printf '%s\n' 'stale-agent-rules' >"$root/AGENTS.md"
+  git -C "$root" init -q
   local stderr
   stderr="$(
     cd "$root"
     "$checkout/new-proj" --agent-upgrade 2>&1 >/dev/null
   )"
-  assert_contains "$stderr" "Updated AGENTS.md in: $root"
+  assert_contains "$stderr" "Updated AGENTS.md in: $(cd "$root" && pwd -P)"
   assert_contains "$(<"$root/AGENTS.md")" "fresh-from-repo"
   assert_no_file "$root/docs/ARCHITECTURE.md"
+  teardown_new_proj_env
+}
+
+test_agent_upgrade_from_subfolder_updates_repo_root() {
+  setup_new_proj_env
+  local root="$TEST_TMP/upgrade-sub" checkout="$TEST_TMP/checkout-sub"
+  mkdir -p "$root/src" "$checkout"
+  cp "$NEW_PROJ" "$checkout/new-proj"
+  printf '%s\n' 'fresh-from-repo' >"$checkout/AGENTS.md"
+  printf '%s\n' 'stale-agent-rules' >"$root/AGENTS.md"
+  git -C "$root" init -q
+  local stderr
+  stderr="$(
+    cd "$root/src"
+    "$checkout/new-proj" --agent-upgrade 2>&1 >/dev/null
+  )"
+  assert_contains "$stderr" "Updated AGENTS.md in: $(cd "$root" && pwd -P)"
+  assert_contains "$(<"$root/AGENTS.md")" "fresh-from-repo"
+  assert_no_file "$root/src/AGENTS.md"
+  teardown_new_proj_env
+}
+
+test_agent_upgrade_no_git_walks_up_to_agents_md() {
+  setup_new_proj_env
+  local root="$TEST_TMP/upgrade-walk" bin_only="$TEST_TMP/bin-only-walk"
+  export HOME="$TEST_TMP/home"
+  mkdir -p "$root/src" "$bin_only" "$HOME/.config/new-proj/bundled"
+  cp "$NEW_PROJ" "$bin_only/new-proj"
+  printf '%s\n' 'stale-agent-rules' >"$root/AGENTS.md"
+  printf '%s\n' 'bundled-agents' >"$HOME/.config/new-proj/bundled/AGENTS.md"
+  local stderr
+  stderr="$(
+    cd "$root/src"
+    "$bin_only/new-proj" --agent-upgrade 2>&1 >/dev/null
+  )"
+  assert_contains "$stderr" "Updated AGENTS.md in: $(cd "$root" && pwd -P)"
+  assert_eq "bundled-agents" "$(tr -d '\n' <"$root/AGENTS.md")"
+  assert_no_file "$root/src/AGENTS.md"
+  teardown_new_proj_env
+}
+
+test_agent_upgrade_errors_without_project_root() {
+  setup_new_proj_env
+  local root="$TEST_TMP/upgrade-missing"
+  mkdir -p "$root/src"
+  local out=0 stderr
+  stderr="$(
+    cd "$root/src"
+    run_new_proj --agent-upgrade 2>&1 >/dev/null
+  )" || out=$?
+  assert_eq "1" "$out"
+  assert_contains "$stderr" "could not find project root"
+  assert_no_file "$root/src/AGENTS.md"
   teardown_new_proj_env
 }
 
@@ -533,12 +587,13 @@ test_agent_upgrade_uses_bundled_when_not_in_checkout() {
   cp "$NEW_PROJ" "$bin_only/new-proj"
   printf '%s\n' 'stale-agent-rules' >"$root/AGENTS.md"
   printf '%s\n' 'bundled-agents' >"$HOME/.config/new-proj/bundled/AGENTS.md"
+  git -C "$root" init -q
   local stderr
   stderr="$(
     cd "$root"
     "$bin_only/new-proj" --agent-upgrade 2>&1 >/dev/null
   )"
-  assert_contains "$stderr" "Updated AGENTS.md in: $root"
+  assert_contains "$stderr" "Updated AGENTS.md in: $(cd "$root" && pwd -P)"
   assert_eq "bundled-agents" "$(tr -d '\n' <"$root/AGENTS.md")"
   teardown_new_proj_env
 }
@@ -688,7 +743,10 @@ main() {
     test_existing_pushes_when_origin_is_local_bare
     test_shell_integration_streams_stderr
     test_existing_prints_insert_message
-    test_agent_upgrade_replaces_agents_in_cwd
+    test_agent_upgrade_replaces_agents_at_repo_root
+    test_agent_upgrade_from_subfolder_updates_repo_root
+    test_agent_upgrade_no_git_walks_up_to_agents_md
+    test_agent_upgrade_errors_without_project_root
     test_agent_upgrade_uses_bundled_when_not_in_checkout
     test_agent_upgrade_rejects_extra_args
     test_agent_upgrade_rejects_combined_flags
