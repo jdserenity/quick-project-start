@@ -1,6 +1,12 @@
 # new-proj shell integration — source from ~/.zshrc or ~/.bashrc
 new-proj() {
   local bin="${NEW_PROJ_BIN:-$HOME/.local/bin/new-proj}"
+  case " $* " in
+    *' --agent-version '*|*' --agent-upgrade '*|*' --existing '*|*' -h '*|*' --help '*)
+      "$bin" "$@"
+      return $?
+      ;;
+  esac
   local cd_cmd rc
   cd_cmd="$("$bin" "$@" 2>&3)" 3>&2
   rc=$?

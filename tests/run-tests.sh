@@ -492,6 +492,33 @@ test_shell_integration_streams_stderr() {
   assert_contains "$src" '2>&3)" 3>&2'
 }
 
+test_shell_integration_agent_version_does_not_eval_stdout() {
+  setup_new_proj_env
+  local root="$TEST_TMP/shell-agent-ver" checkout="$TEST_TMP/checkout-shell-ver"
+  mkdir -p "$root" "$checkout"
+  cp "$NEW_PROJ" "$checkout/new-proj"
+  cp "$ROOT/AGENTS.md" "$checkout/AGENTS.md"
+  cp "$ROOT/AGENTS.md" "$root/AGENTS.md"
+  git -C "$root" init -q
+  local out=0 combined
+  combined="$(
+    zsh -f -c "
+      export NEW_PROJ_BIN='$checkout/new-proj'
+      source '$ROOT/templates/shell-integration.zsh'
+      cd '$root'
+      new-proj --agent-version
+    " 2>&1
+  )" || out=$?
+  assert_eq "0" "$out"
+  assert_contains "$combined" "project: AGENTS.md version: 1.0.0"
+  assert_contains "$combined" "latest: AGENTS.md version: 1.0.0"
+  if [[ "$combined" == *"command not found: project:"* ]]; then
+    echo "FAIL: shell integration eval'd --agent-version stdout as shell commands"
+    exit 1
+  fi
+  teardown_new_proj_env
+}
+
 test_existing_prints_insert_message() {
   setup_new_proj_env
   seed_standard_templates
@@ -828,6 +855,7 @@ main() {
     test_existing_links_github_repo_without_create
     test_existing_pushes_when_origin_is_local_bare
     test_shell_integration_streams_stderr
+    test_shell_integration_agent_version_does_not_eval_stdout
     test_existing_prints_insert_message
     test_agent_upgrade_replaces_agents_at_repo_root
     test_agent_upgrade_from_subfolder_updates_repo_root
