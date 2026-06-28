@@ -614,6 +614,92 @@ test_agent_upgrade_rejects_combined_flags() {
   teardown_new_proj_env
 }
 
+test_agent_version_shows_current_when_up_to_date() {
+  setup_new_proj_env
+  local root="$TEST_TMP/agent-ver-current" checkout="$TEST_TMP/checkout-ver"
+  mkdir -p "$root" "$checkout"
+  cp "$NEW_PROJ" "$checkout/new-proj"
+  printf '%s\n' 'AGENTS.md version: 3' >"$checkout/AGENTS.md"
+  printf '%s\n' 'AGENTS.md version: 3' >"$root/AGENTS.md"
+  git -C "$root" init -q
+  local out=0 stdout
+  stdout="$(
+    cd "$root"
+    "$checkout/new-proj" --agent-version 2>&1
+  )"
+  out=$?
+  assert_eq "0" "$out"
+  assert_contains "$stdout" "project: AGENTS.md version: 3"
+  assert_contains "$stdout" "latest: AGENTS.md version: 3"
+  teardown_new_proj_env
+}
+
+test_agent_version_shows_stale_and_exits_nonzero() {
+  setup_new_proj_env
+  local root="$TEST_TMP/agent-ver-stale" checkout="$TEST_TMP/checkout-ver-stale"
+  mkdir -p "$root" "$checkout"
+  cp "$NEW_PROJ" "$checkout/new-proj"
+  printf '%s\n' 'AGENTS.md version: 2' >"$checkout/AGENTS.md"
+  printf '%s\n' 'AGENTS.md version: 1' >"$root/AGENTS.md"
+  git -C "$root" init -q
+  local out=0 stdout
+  stdout="$(
+    cd "$root"
+    "$checkout/new-proj" --agent-version 2>&1
+  )" || out=$?
+  assert_eq "1" "$out"
+  assert_contains "$stdout" "project: AGENTS.md version: 1"
+  assert_contains "$stdout" "latest: AGENTS.md version: 2"
+  teardown_new_proj_env
+}
+
+test_agent_version_reports_missing_version_line() {
+  setup_new_proj_env
+  local root="$TEST_TMP/agent-ver-none" checkout="$TEST_TMP/checkout-ver-none"
+  mkdir -p "$root" "$checkout"
+  cp "$NEW_PROJ" "$checkout/new-proj"
+  cp "$ROOT/AGENTS.md" "$checkout/AGENTS.md"
+  printf '%s\n' 'legacy-agent-rules' >"$root/AGENTS.md"
+  git -C "$root" init -q
+  local out=0 stdout
+  stdout="$(
+    cd "$root"
+    "$checkout/new-proj" --agent-version 2>&1
+  )" || out=$?
+  assert_eq "1" "$out"
+  assert_contains "$stdout" "project: (no version — last line: legacy-agent-rules)"
+  assert_contains "$stdout" "latest: AGENTS.md version: 1"
+  teardown_new_proj_env
+}
+
+test_agent_version_from_subfolder() {
+  setup_new_proj_env
+  local root="$TEST_TMP/agent-ver-sub" checkout="$TEST_TMP/checkout-ver-sub"
+  mkdir -p "$root/src" "$checkout"
+  cp "$NEW_PROJ" "$checkout/new-proj"
+  cp "$ROOT/AGENTS.md" "$checkout/AGENTS.md"
+  cp "$ROOT/AGENTS.md" "$root/AGENTS.md"
+  git -C "$root" init -q
+  local out=0 stdout
+  stdout="$(
+    cd "$root/src"
+    "$checkout/new-proj" --agent-version 2>&1
+  )"
+  out=$?
+  assert_eq "0" "$out"
+  assert_contains "$stdout" "project: AGENTS.md version: 1"
+  assert_contains "$stdout" "latest: AGENTS.md version: 1"
+  teardown_new_proj_env
+}
+
+test_agent_version_rejects_combined_flags() {
+  setup_new_proj_env
+  local out=0
+  run_new_proj --agent-version --existing 2>&1 >/dev/null || out=$?
+  assert_eq "1" "$out"
+  teardown_new_proj_env
+}
+
 test_install_refreshes_bundled_agents() {
   setup_install_home
   mkdir -p "$HOME/.config/new-proj/bundled"
@@ -750,6 +836,11 @@ main() {
     test_agent_upgrade_uses_bundled_when_not_in_checkout
     test_agent_upgrade_rejects_extra_args
     test_agent_upgrade_rejects_combined_flags
+    test_agent_version_shows_current_when_up_to_date
+    test_agent_version_shows_stale_and_exits_nonzero
+    test_agent_version_reports_missing_version_line
+    test_agent_version_from_subfolder
+    test_agent_version_rejects_combined_flags
     test_install_refreshes_bundled_agents
     test_install_copies_new_proj_binary
     test_install_adds_shell_integration_to_zshrc

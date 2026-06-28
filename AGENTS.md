@@ -76,3 +76,6 @@ Documentation Rules
 - Update AGENTS.md whenever the user specifies a repeated agent behavior that should persist.
 - Keep documentation factual and current.
 - Separate confirmed decisions from open questions clearly.
+- When you change this file, increment the integer on the last line (`AGENTS.md version: N`).
+
+AGENTS.md version: 1

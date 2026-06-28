@@ -5,11 +5,15 @@ usage() {
   echo "Usage: new-proj [--no-repo] [--existing] \"project-name\""
   echo "       new-proj --existing   # scaffold into current directory"
   echo "       new-proj --agent-upgrade   # replace project-root AGENTS.md with newest template"
+  echo "       new-proj --agent-version   # print this project's AGENTS.md version and the latest"
 }
+
+EMBEDDED_AGENTS_MD_VERSION=1
 
 no_repo=0
 existing=0
 agent_upgrade=0
+agent_version=0
 project_name=""
 
 while [[ $# -gt 0 ]]; do
@@ -24,6 +28,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --agent-upgrade)
       agent_upgrade=1
+      shift
+      ;;
+    --agent-version)
+      agent_version=1
       shift
       ;;
     -h|--help)
@@ -61,15 +69,15 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
-if [[ "$agent_upgrade" -eq 1 ]]; then
+if [[ "$agent_upgrade" -eq 1 || "$agent_version" -eq 1 ]]; then
   if [[ "$existing" -eq 1 || "$no_repo" -eq 1 || -n "$project_name" ]]; then
-    echo "Error: --agent-upgrade cannot be combined with other options or a project name." >&2
+    echo "Error: --agent-upgrade and --agent-version cannot be combined with other options or a project name." >&2
     usage >&2
     exit 1
   fi
 fi
 
-if [[ "$agent_upgrade" -eq 0 && "$existing" -eq 0 && -z "$project_name" ]]; then
+if [[ "$agent_upgrade" -eq 0 && "$agent_version" -eq 0 && "$existing" -eq 0 && -z "$project_name" ]]; then
   usage >&2
   exit 1
 fi
@@ -104,16 +112,55 @@ find_project_root() {
   (cd "$root" && pwd -P)
 }
 
-write_agents_template_to() {
-  local dest="$1"
+resolve_latest_agents_path() {
   local script_dir
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   if [[ -f "$script_dir/AGENTS.md" ]]; then
-    cp "$script_dir/AGENTS.md" "$dest"
+    printf '%s\n' "$script_dir/AGENTS.md"
     return 0
   fi
   if [[ -f "$bundled_agents" ]]; then
-    cp "$bundled_agents" "$dest"
+    printf '%s\n' "$bundled_agents"
+    return 0
+  fi
+  return 1
+}
+
+read_agents_last_line() {
+  local file="$1"
+  awk 'NF { last = $0 } END { print last }' "$file"
+}
+
+read_agents_version_from_file() {
+  local file="$1"
+  local line
+  if [[ ! -f "$file" ]]; then
+    return 1
+  fi
+  line="$(read_agents_last_line "$file")"
+  if [[ "$line" =~ ^AGENTS\.md\ version:\ ([0-9]+)$ ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}"
+    return 0
+  fi
+  return 1
+}
+
+latest_agents_version() {
+  local path version
+  if path="$(resolve_latest_agents_path)"; then
+    if version="$(read_agents_version_from_file "$path")"; then
+      printf '%s\n' "$version"
+      return 0
+    fi
+  fi
+  printf '%s\n' "$EMBEDDED_AGENTS_MD_VERSION"
+}
+
+write_agents_template_to() {
+  local dest="$1"
+  local latest_path
+  if latest_path="$(resolve_latest_agents_path)"; then
+    cp "$latest_path" "$dest"
     return 0
   fi
   cat <<'EOF' >"$dest"
@@ -194,8 +241,32 @@ Documentation Rules
 - Update AGENTS.md whenever the user specifies a repeated agent behavior that should persist.
 - Keep documentation factual and current.
 - Separate confirmed decisions from open questions clearly.
+- When you change this file, increment the integer on the last line (`AGENTS.md version: N`).
+
+AGENTS.md version: 1
 EOF
 }
+
+if [[ "$agent_version" -eq 1 ]]; then
+  project_dir="$(find_project_root "$(pwd)")"
+  project_file="$project_dir/AGENTS.md"
+  latest_ver="$(latest_agents_version)"
+  if [[ ! -f "$project_file" ]]; then
+    echo "project: (missing AGENTS.md)"
+    echo "latest: AGENTS.md version: $latest_ver"
+    exit 1
+  fi
+  if project_ver="$(read_agents_version_from_file "$project_file")"; then
+    echo "project: AGENTS.md version: $project_ver"
+  else
+    echo "project: (no version — last line: $(read_agents_last_line "$project_file"))"
+  fi
+  echo "latest: AGENTS.md version: $latest_ver"
+  if [[ -n "${project_ver:-}" && "$project_ver" == "$latest_ver" ]]; then
+    exit 0
+  fi
+  exit 1
+fi
 
 if [[ "$agent_upgrade" -eq 1 ]]; then
   project_dir="$(find_project_root "$(pwd)")"

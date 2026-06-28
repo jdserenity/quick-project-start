@@ -32,6 +32,7 @@ new-proj --existing                # add AGENTS.md + docs/ here; git + GitHub un
 new-proj --existing --no-repo      # scaffold only; skip git/GitHub
 cd /path/to/existing-project
 new-proj --agent-upgrade           # replace project-root AGENTS.md with newest template; no other changes
+new-proj --agent-version           # show this project's AGENTS.md version vs latest (exit 1 if behind)
 ```
 
 `./install.sh` adds shell integration to `~/.zshrc` (once). Run `source ~/.zshrc` or open a new terminal so `new-proj` can change directory in your shell.
