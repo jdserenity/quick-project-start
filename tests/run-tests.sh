@@ -619,8 +619,8 @@ test_agent_version_shows_current_when_up_to_date() {
   local root="$TEST_TMP/agent-ver-current" checkout="$TEST_TMP/checkout-ver"
   mkdir -p "$root" "$checkout"
   cp "$NEW_PROJ" "$checkout/new-proj"
-  printf '%s\n' 'AGENTS.md version: 3' >"$checkout/AGENTS.md"
-  printf '%s\n' 'AGENTS.md version: 3' >"$root/AGENTS.md"
+  printf '%s\n' 'AGENTS.md version: 3.0.0' >"$checkout/AGENTS.md"
+  printf '%s\n' 'AGENTS.md version: 3.0.0' >"$root/AGENTS.md"
   git -C "$root" init -q
   local out=0 stdout
   stdout="$(
@@ -629,8 +629,8 @@ test_agent_version_shows_current_when_up_to_date() {
   )"
   out=$?
   assert_eq "0" "$out"
-  assert_contains "$stdout" "project: AGENTS.md version: 3"
-  assert_contains "$stdout" "latest: AGENTS.md version: 3"
+  assert_contains "$stdout" "project: AGENTS.md version: 3.0.0"
+  assert_contains "$stdout" "latest: AGENTS.md version: 3.0.0"
   teardown_new_proj_env
 }
 
@@ -639,8 +639,8 @@ test_agent_version_shows_stale_and_exits_nonzero() {
   local root="$TEST_TMP/agent-ver-stale" checkout="$TEST_TMP/checkout-ver-stale"
   mkdir -p "$root" "$checkout"
   cp "$NEW_PROJ" "$checkout/new-proj"
-  printf '%s\n' 'AGENTS.md version: 2' >"$checkout/AGENTS.md"
-  printf '%s\n' 'AGENTS.md version: 1' >"$root/AGENTS.md"
+  printf '%s\n' 'AGENTS.md version: 2.0.0' >"$checkout/AGENTS.md"
+  printf '%s\n' 'AGENTS.md version: 1.0.0' >"$root/AGENTS.md"
   git -C "$root" init -q
   local out=0 stdout
   stdout="$(
@@ -648,8 +648,8 @@ test_agent_version_shows_stale_and_exits_nonzero() {
     "$checkout/new-proj" --agent-version 2>&1
   )" || out=$?
   assert_eq "1" "$out"
-  assert_contains "$stdout" "project: AGENTS.md version: 1"
-  assert_contains "$stdout" "latest: AGENTS.md version: 2"
+  assert_contains "$stdout" "project: AGENTS.md version: 1.0.0"
+  assert_contains "$stdout" "latest: AGENTS.md version: 2.0.0"
   teardown_new_proj_env
 }
 
@@ -668,7 +668,7 @@ test_agent_version_reports_missing_version_line() {
   )" || out=$?
   assert_eq "1" "$out"
   assert_contains "$stdout" "project: (no version — last line: legacy-agent-rules)"
-  assert_contains "$stdout" "latest: AGENTS.md version: 1"
+  assert_contains "$stdout" "latest: AGENTS.md version: 1.0.0"
   teardown_new_proj_env
 }
 
@@ -687,8 +687,8 @@ test_agent_version_from_subfolder() {
   )"
   out=$?
   assert_eq "0" "$out"
-  assert_contains "$stdout" "project: AGENTS.md version: 1"
-  assert_contains "$stdout" "latest: AGENTS.md version: 1"
+  assert_contains "$stdout" "project: AGENTS.md version: 1.0.0"
+  assert_contains "$stdout" "latest: AGENTS.md version: 1.0.0"
   teardown_new_proj_env
 }
 
