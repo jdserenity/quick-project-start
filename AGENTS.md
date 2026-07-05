@@ -69,14 +69,13 @@ How to pick test type (project default):
 3. Browser (e2e): only for stable end-to-end flows; avoid writing a dozen e2e tests while screens are still moving daily.
 
 Documentation Rules
-- docs/ARCHITECTURE.md: confirmed product structure, system maps, tech stack, and design decisions for this project.
-- docs/KNOWLEDGE.md: hard-won understanding, pitfalls, and context that should survive new agent sessions. Agents may create and edit this file.
-- docs/skills/: per-project Cursor agent skills (folders with SKILL.md). Create skills here when asked; do not invent skills unprompted.
+- docs/ARCHITECTURE.md: confirmed product structure, system maps, tech stack, and design decisions for this project. Agents (you) have full control over this file.
+- docs/KNOWLEDGE.md: hard-won understanding, pitfalls, and context that should survive new agent sessions. Agents (you) have full control over this file.
+- docs/skills/: Agent skills for valuable tasks that have been done once. Create skills here when asked; do not invent skills unprompted.
 - docs/ARCHITECTURE.md is not a textbook. Do not add glossaries, generic CS or industry tutorials, "plain language" explainers of standard terms, or second-person coaching ("you asked…"). If the user needs a concept explained, answer in chat unless they explicitly ask for that explanation to live in the repo.
 - Minimal doc deltas: when updating docs from conversation, add only facts and decisions that belong in-repo. Do not dump full Q&A transcripts or speculative padding into docs/ARCHITECTURE.md or docs/KNOWLEDGE.md.
 - Keep AGENTS.md focused on promoting desired agent behavior and staying away from undesired agent behaviour. Anything product architecture does not belong here. Do not edit AGENTS.md in scaffolded projects — only the quick-project-start repo or `new-proj --agent-upgrade` may change it.
-- Keep documentation factual and current.
-- Separate confirmed decisions from open questions clearly. Open questions go to the maintainer in chat, not to docs/TODO.md.
+- Keep documentation factual and current. It should be updated whenever valuable.
 - When you change AGENTS.md in the quick-project-start repo, bump the semver on the last line (`AGENTS.md version: X.Y.Z`).
 
 AGENTS.md version: 1.1.0
