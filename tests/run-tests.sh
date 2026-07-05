@@ -89,14 +89,17 @@ test_creates_scaffold_and_root_readme() {
   assert_file "$root/.gitignore"
   assert_file "$root/AGENTS.md"
   assert_file "$root/docs/ARCHITECTURE.md"
-  assert_file "$root/docs/DEPLOY.md"
-  assert_file "$root/docs/TODO.md"
+  assert_file "$root/docs/KNOWLEDGE.md"
+  assert_file "$root/docs/skills"
+  assert_no_file "$root/docs/DEPLOY.md"
+  assert_no_file "$root/docs/TODO.md"
   assert_no_file "$root/docs/README.md"
   assert_no_file "$root/docs/AGENTS.md"
 
   assert_eq "custom-readme" "$(tr -d '\n' <"$root/README.md")"
   assert_eq "custom-agent-rules" "$(tr -d '\n' <"$root/AGENTS.md")"
   assert_eq "custom-arch" "$(tr -d '\n' <"$root/docs/ARCHITECTURE.md")"
+  assert_eq "custom-knowledge" "$(tr -d '\n' <"$root/docs/KNOWLEDGE.md")"
   assert_eq "node_modules/" "$(tr -d '\n' <"$root/.gitignore")"
 
   teardown_new_proj_env
@@ -123,8 +126,8 @@ test_respects_config_env_scaffold_name() {
   unset NEW_PROJ_SCAFFOLD_DIR_NAME
   run_new_proj "gamma" >/dev/null
 
-  assert_file "$NEW_PROJ_BASE_DIR/gamma/notes/TODO.md"
-  assert_no_file "$NEW_PROJ_BASE_DIR/gamma/docs/TODO.md"
+  assert_file "$NEW_PROJ_BASE_DIR/gamma/notes/KNOWLEDGE.md"
+  assert_no_file "$NEW_PROJ_BASE_DIR/gamma/docs/KNOWLEDGE.md"
 
   teardown_new_proj_env
 }
@@ -137,7 +140,7 @@ test_seeds_agents_template_when_missing() {
   local agents_template
   agents_template="$(<"$NEW_PROJ_TEMPLATES_DIR/AGENTS.md")"
   assert_contains "$agents_template" "Indentation: 2 spaces"
-  assert_contains "$agents_template" "docs/ARCHITECTURE.md"
+  assert_contains "$agents_template" "docs/KNOWLEDGE.md"
 
   local project_agents
   project_agents="$(<"$NEW_PROJ_BASE_DIR/delta/AGENTS.md")"
@@ -149,7 +152,7 @@ test_seeds_agents_template_when_missing() {
 test_creates_default_gitignore_template_when_missing() {
   setup_new_proj_env
   printf '%s\n' 'agent' >"$NEW_PROJ_TEMPLATES_DIR/AGENTS.md"
-  for f in README.md ARCHITECTURE.md DEPLOY.md TODO.md; do
+  for f in README.md ARCHITECTURE.md KNOWLEDGE.md; do
     : >"$NEW_PROJ_TEMPLATES_DIR/$f"
   done
   run_new_proj "epsilon" >/dev/null
@@ -257,9 +260,11 @@ test_existing_inserts_docs_and_agents() {
   setup_new_proj_env
   seed_standard_templates
   local root="$TEST_TMP/existing"
-  mkdir -p "$root"
+  mkdir -p "$root/docs"
   printf '%s\n' 'keep-readme' >"$root/README.md"
   printf '%s\n' 'keep-ignore' >"$root/.gitignore"
+  printf '%s\n' 'legacy-deploy' >"$root/docs/DEPLOY.md"
+  printf '%s\n' 'legacy-todo' >"$root/docs/TODO.md"
   (
     cd "$root"
     run_new_proj --existing >/dev/null
@@ -269,8 +274,10 @@ test_existing_inserts_docs_and_agents() {
   assert_eq "keep-ignore" "$(tr -d '\n' <"$root/.gitignore")"
   assert_eq "custom-agent-rules" "$(tr -d '\n' <"$root/AGENTS.md")"
   assert_eq "custom-arch" "$(tr -d '\n' <"$root/docs/ARCHITECTURE.md")"
-  assert_eq "custom-deploy" "$(tr -d '\n' <"$root/docs/DEPLOY.md")"
-  assert_eq "custom-todo" "$(tr -d '\n' <"$root/docs/TODO.md")"
+  assert_eq "custom-knowledge" "$(tr -d '\n' <"$root/docs/KNOWLEDGE.md")"
+  assert_eq "legacy-deploy" "$(tr -d '\n' <"$root/docs/DEPLOY.md")"
+  assert_eq "legacy-todo" "$(tr -d '\n' <"$root/docs/TODO.md")"
+  assert_file "$root/docs/skills"
   assert_no_file "$root/docs/README.md"
 
   teardown_new_proj_env
@@ -510,8 +517,8 @@ test_shell_integration_agent_version_does_not_eval_stdout() {
     " 2>&1
   )" || out=$?
   assert_eq "0" "$out"
-  assert_contains "$combined" "project: AGENTS.md version: 1.0.0"
-  assert_contains "$combined" "latest: AGENTS.md version: 1.0.0"
+  assert_contains "$combined" "project: AGENTS.md version: 1.1.0"
+  assert_contains "$combined" "latest: AGENTS.md version: 1.1.0"
   if [[ "$combined" == *"command not found: project:"* ]]; then
     echo "FAIL: shell integration eval'd --agent-version stdout as shell commands"
     exit 1
@@ -695,7 +702,7 @@ test_agent_version_reports_missing_version_line() {
   )" || out=$?
   assert_eq "1" "$out"
   assert_contains "$stdout" "project: (no version — last line: legacy-agent-rules)"
-  assert_contains "$stdout" "latest: AGENTS.md version: 1.0.0"
+  assert_contains "$stdout" "latest: AGENTS.md version: 1.1.0"
   teardown_new_proj_env
 }
 
@@ -714,8 +721,8 @@ test_agent_version_from_subfolder() {
   )"
   out=$?
   assert_eq "0" "$out"
-  assert_contains "$stdout" "project: AGENTS.md version: 1.0.0"
-  assert_contains "$stdout" "latest: AGENTS.md version: 1.0.0"
+  assert_contains "$stdout" "project: AGENTS.md version: 1.1.0"
+  assert_contains "$stdout" "latest: AGENTS.md version: 1.1.0"
   teardown_new_proj_env
 }
 
@@ -795,31 +802,66 @@ test_install_creates_config_and_templates_when_missing() {
   local agents
   agents="$(<"$HOME/.config/new-proj/templates/AGENTS.md")"
   assert_contains "$agents" "Indentation: 2 spaces"
-  assert_contains "$agents" "docs/ARCHITECTURE.md"
+  assert_contains "$agents" "docs/KNOWLEDGE.md"
   teardown_install_home
 }
 
-test_install_does_not_overwrite_existing_templates() {
+test_install_refreshes_templates_on_every_run() {
   setup_install_home
   mkdir -p "$HOME/.config/new-proj/templates"
   printf '%s\n' 'SCAFFOLD_DIR_NAME="docs"' >"$HOME/.config/new-proj/config.env"
-  printf '%s\n' 'KEEP_THIS_AGENTS' >"$HOME/.config/new-proj/templates/AGENTS.md"
-  printf '%s\n' 'KEEP_THIS_README' >"$HOME/.config/new-proj/templates/README.md"
+  printf '%s\n' 'STALE_AGENTS' >"$HOME/.config/new-proj/templates/AGENTS.md"
+  printf '%s\n' 'STALE_README' >"$HOME/.config/new-proj/templates/README.md"
   "$INSTALL_SH" >/dev/null
-  assert_eq "KEEP_THIS_AGENTS" "$(<"$HOME/.config/new-proj/templates/AGENTS.md")"
-  assert_eq "KEEP_THIS_README" "$(<"$HOME/.config/new-proj/templates/README.md")"
+  local agents readme knowledge
+  agents="$(<"$HOME/.config/new-proj/templates/AGENTS.md")"
+  readme="$(<"$HOME/.config/new-proj/templates/README.md")"
+  knowledge="$(<"$HOME/.config/new-proj/templates/KNOWLEDGE.md")"
+  assert_contains "$agents" "AGENTS.md version: 1.1.0"
+  assert_contains "$agents" "docs/KNOWLEDGE.md"
+  assert_contains "$readme" "Brief description"
+  assert_contains "$knowledge" "Hard-won lessons"
+  teardown_install_home
+}
+
+test_install_removes_deprecated_template_files() {
+  setup_install_home
+  mkdir -p "$HOME/.config/new-proj/templates"
+  printf '%s\n' 'old' >"$HOME/.config/new-proj/templates/DEPLOY.md"
+  printf '%s\n' 'old' >"$HOME/.config/new-proj/templates/TODO.md"
+  "$INSTALL_SH" >/dev/null
+  assert_no_file "$HOME/.config/new-proj/templates/DEPLOY.md"
+  assert_no_file "$HOME/.config/new-proj/templates/TODO.md"
   teardown_install_home
 }
 
 test_install_does_not_modify_repo_docs() {
-  local todo_file="$ROOT/docs/TODO.md"
+  local arch_file="$ROOT/docs/ARCHITECTURE.md"
   local before after
-  before="$(shasum -a 256 "$todo_file" | awk '{print $1}')"
+  before="$(shasum -a 256 "$arch_file" | awk '{print $1}')"
   setup_install_home
   "$INSTALL_SH" >/dev/null
-  after="$(shasum -a 256 "$todo_file" | awk '{print $1}')"
-  assert_eq "$before" "$after" "repo docs/TODO.md changed after install"
+  after="$(shasum -a 256 "$arch_file" | awk '{print $1}')"
+  assert_eq "$before" "$after" "repo docs/ARCHITECTURE.md changed after install"
   teardown_install_home
+}
+
+test_existing_preserves_agents_and_knowledge_when_present() {
+  setup_new_proj_env
+  seed_standard_templates
+  local root="$TEST_TMP/existing-keep"
+  mkdir -p "$root/docs"
+  printf '%s\n' 'keep-agents' >"$root/AGENTS.md"
+  printf '%s\n' 'keep-knowledge' >"$root/docs/KNOWLEDGE.md"
+  (
+    cd "$root"
+    run_new_proj --existing >/dev/null
+  )
+  assert_eq "keep-agents" "$(tr -d '\n' <"$root/AGENTS.md")"
+  assert_eq "keep-knowledge" "$(tr -d '\n' <"$root/docs/KNOWLEDGE.md")"
+  assert_eq "custom-arch" "$(tr -d '\n' <"$root/docs/ARCHITECTURE.md")"
+  assert_file "$root/docs/skills"
+  teardown_new_proj_env
 }
 
 # --- runner ---
@@ -876,7 +918,9 @@ main() {
     test_install_does_not_duplicate_zshrc_entry
     test_install_skips_when_source_line_elsewhere_in_zshrc
     test_install_creates_config_and_templates_when_missing
-    test_install_does_not_overwrite_existing_templates
+    test_install_refreshes_templates_on_every_run
+    test_install_removes_deprecated_template_files
+    test_existing_preserves_agents_and_knowledge_when_present
     test_install_does_not_modify_repo_docs
   )
 

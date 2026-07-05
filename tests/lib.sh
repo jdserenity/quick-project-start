@@ -124,8 +124,7 @@ seed_standard_templates() {
   printf '%s\n' 'custom-agent-rules' >"$NEW_PROJ_TEMPLATES_DIR/AGENTS.md"
   printf '%s\n' 'custom-readme' >"$NEW_PROJ_TEMPLATES_DIR/README.md"
   printf '%s\n' 'custom-arch' >"$NEW_PROJ_TEMPLATES_DIR/ARCHITECTURE.md"
-  printf '%s\n' 'custom-deploy' >"$NEW_PROJ_TEMPLATES_DIR/DEPLOY.md"
-  printf '%s\n' 'custom-todo' >"$NEW_PROJ_TEMPLATES_DIR/TODO.md"
+  printf '%s\n' 'custom-knowledge' >"$NEW_PROJ_TEMPLATES_DIR/KNOWLEDGE.md"
   printf '%s\n' 'node_modules/' >"$NEW_PROJ_TEMPLATES_DIR/.gitignore"
 }
 

@@ -5,7 +5,7 @@ Versioned source for the global `new-proj` command.
 ## Why this setup
 
 - Keep this in a GitHub repo.
-- Run `./install.sh` after each pull.
+- Run `./install.sh` after each pull — it syncs templates so new projects get the latest policy.
 - The installer copies `new-proj` into `~/.local/bin/new-proj`.
 - You can delete this clone anytime; installed command keeps working.
 
@@ -21,6 +21,8 @@ Recommended update flow:
 git pull
 ./install.sh
 ```
+
+`install.sh` refreshes the binary, `~/.config/new-proj/bundled/AGENTS.md`, and all files under `~/.config/new-proj/templates/` from this repo.
 
 ## Usage
 
@@ -46,8 +48,8 @@ Creates:
 - root `AGENTS.md`, `README.md`, and `.gitignore`
 - scaffold folder (default `docs`) with:
   - `ARCHITECTURE.md`
-  - `DEPLOY.md`
-  - `TODO.md`
+  - `KNOWLEDGE.md`
+  - `skills/` (empty folder)
 
 Requires `git` and [GitHub CLI](https://cli.github.com/) (`gh`) logged in (`gh auth login`). If either is missing or `gh repo create` fails, the local project is still created and you get a warning.
 
@@ -60,14 +62,13 @@ Global runtime config:
   - optional: `BASE_DIR="/some/path"`
   - optional: `TEMPLATES_DIR="/some/path"`
 
-Global templates:
+Global templates (refreshed on every `./install.sh`):
 
 - `~/.config/new-proj/templates/`
   - `AGENTS.md`
   - `ARCHITECTURE.md`
+  - `KNOWLEDGE.md`
   - `README.md`
-  - `DEPLOY.md`
-  - `TODO.md`
   - `.gitignore`
 
 Per-run overrides:
