@@ -9,6 +9,7 @@ target_script="$target_dir/new-proj"
 config_dir="$HOME/.config/new-proj"
 config_file="$config_dir/config.env"
 templates_dir="$config_dir/templates"
+repo_templates_dir="$script_dir/templates"
 
 if [[ ! -f "$source_script" ]]; then
   echo "Error: could not find source script at $source_script" >&2
@@ -21,53 +22,34 @@ install -m 0755 "$source_script" "$target_script"
 mkdir -p "$templates_dir"
 bundled_dir="$config_dir/bundled"
 mkdir -p "$bundled_dir"
-if [[ -f "$script_dir/AGENTS.md" ]]; then
-  cp "$script_dir/AGENTS.md" "$bundled_dir/AGENTS.md"
-fi
+
+sync_managed_templates() {
+  if [[ -f "$script_dir/AGENTS.md" ]]; then
+    cp "$script_dir/AGENTS.md" "$bundled_dir/AGENTS.md"
+    cp "$script_dir/AGENTS.md" "$templates_dir/AGENTS.md"
+  else
+    echo "Warning: could not sync AGENTS.md (missing $script_dir/AGENTS.md)." >&2
+  fi
+  for file_name in ARCHITECTURE.md KNOWLEDGE.md README.md; do
+    if [[ -f "$repo_templates_dir/$file_name" ]]; then
+      cp "$repo_templates_dir/$file_name" "$templates_dir/$file_name"
+    else
+      echo "Warning: missing template $repo_templates_dir/$file_name; skipped." >&2
+    fi
+  done
+  if [[ -f "$repo_templates_dir/.gitignore" ]]; then
+    cp "$repo_templates_dir/.gitignore" "$templates_dir/.gitignore"
+  fi
+  for deprecated in DEPLOY.md TODO.md; do
+    rm -f "$templates_dir/$deprecated"
+  done
+}
+
+sync_managed_templates
 
 if [[ ! -f "$config_file" ]]; then
   cat <<'EOF' >"$config_file"
 SCAFFOLD_DIR_NAME="docs"
-EOF
-fi
-
-agents_template="$templates_dir/AGENTS.md"
-if [[ ! -f "$agents_template" || ! -s "$agents_template" ]]; then
-  if [[ -f "$script_dir/AGENTS.md" ]]; then
-    cp "$script_dir/AGENTS.md" "$agents_template"
-  else
-    echo "Warning: could not seed AGENTS.md template (missing $script_dir/AGENTS.md)." >&2
-    : >"$agents_template"
-  fi
-fi
-
-for file_name in ARCHITECTURE.md README.md DEPLOY.md TODO.md; do
-  template_path="$templates_dir/$file_name"
-  if [[ ! -f "$template_path" ]]; then
-    : >"$template_path"
-  fi
-done
-
-if [[ ! -f "$templates_dir/.gitignore" ]]; then
-  cat <<'EOF' >"$templates_dir/.gitignore"
-# OS files
-.DS_Store
-
-# Environment files
-.env
-.env.*
-!.env.example
-
-# JavaScript / TypeScript
-node_modules/
-dist/
-build/
-coverage/
-
-# Python
-.venv/
-__pycache__/
-*.pyc
 EOF
 fi
 
@@ -106,7 +88,7 @@ install_shell_integration_zshrc() {
 
 echo "Installed: $target_script"
 echo "Config: $config_file"
-echo "Templates: $templates_dir"
+echo "Templates: $templates_dir (synced from repo)"
 if [[ -f "$shell_integration" ]]; then
   echo "Shell integration: $shell_integration"
   install_shell_integration_zshrc "$shell_integration"
