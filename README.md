@@ -22,7 +22,7 @@ git pull
 ./install.sh
 ```
 
-`install.sh` refreshes the binary, `~/.config/new-proj/bundled/AGENTS.md`, files under `~/.config/new-proj/templates/`, and files under `~/.config/new-proj/scripts/` from this repo.
+`install.sh` refreshes the binary, `~/.config/new-proj/bundled/AGENTS.md`, and all files under `~/.config/new-proj/templates/` from this repo (including `sz.py`).
 
 ## Usage
 
@@ -71,18 +71,13 @@ Global templates (refreshed on every `./install.sh`):
   - `KNOWLEDGE.md`
   - `README.md`
   - `.gitignore`
-
-Global scripts (refreshed on every `./install.sh`; copied to project root `scripts/`):
-
-- `~/.config/new-proj/scripts/`
-  - `sz.py` (code size stats utility)
+  - `sz.py` (copied into project root `scripts/` when scaffolding)
 
 Per-run overrides:
 
 - `NEW_PROJ_BASE_DIR="/some/path" new-proj "my-project"`
 - `NEW_PROJ_SCAFFOLD_DIR_NAME="blueprint" new-proj "my-project"`
 - `NEW_PROJ_TEMPLATES_DIR="/some/path" new-proj "my-project"`
-- `NEW_PROJ_SCRIPTS_DIR="/some/path" new-proj "my-project"`
 
 ## Tests
 

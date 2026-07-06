@@ -115,9 +115,8 @@ EOF
 
   export NEW_PROJ_BASE_DIR="$TEST_TMP/projects"
   export NEW_PROJ_TEMPLATES_DIR="$TEST_TMP/templates"
-  export NEW_PROJ_SCRIPTS_DIR="$TEST_TMP/scripts"
   export NEW_PROJ_CONFIG_FILE="$TEST_TMP/config.env"
-  mkdir -p "$NEW_PROJ_BASE_DIR" "$NEW_PROJ_TEMPLATES_DIR" "$NEW_PROJ_SCRIPTS_DIR"
+  mkdir -p "$NEW_PROJ_BASE_DIR" "$NEW_PROJ_TEMPLATES_DIR"
   printf '%s\n' 'SCAFFOLD_DIR_NAME="docs"' >"$NEW_PROJ_CONFIG_FILE"
 }
 
@@ -127,14 +126,14 @@ seed_standard_templates() {
   printf '%s\n' 'custom-arch' >"$NEW_PROJ_TEMPLATES_DIR/ARCHITECTURE.md"
   printf '%s\n' 'custom-knowledge' >"$NEW_PROJ_TEMPLATES_DIR/KNOWLEDGE.md"
   printf '%s\n' 'node_modules/' >"$NEW_PROJ_TEMPLATES_DIR/.gitignore"
-  printf '%s\n' 'template-sz-marker' >"$NEW_PROJ_SCRIPTS_DIR/sz.py"
+  printf '%s\n' 'template-sz-marker' >"$NEW_PROJ_TEMPLATES_DIR/sz.py"
 }
 
 teardown_new_proj_env() {
   if [[ -n "${TEST_TMP:-}" && -d "$TEST_TMP" ]]; then
     rm -rf "$TEST_TMP"
   fi
-  unset TEST_TMP NEW_PROJ_BASE_DIR NEW_PROJ_TEMPLATES_DIR NEW_PROJ_SCRIPTS_DIR NEW_PROJ_CONFIG_FILE NEW_PROJ_SCAFFOLD_DIR_NAME
+  unset TEST_TMP NEW_PROJ_BASE_DIR NEW_PROJ_TEMPLATES_DIR NEW_PROJ_CONFIG_FILE NEW_PROJ_SCAFFOLD_DIR_NAME
 }
 
 run_new_proj() {

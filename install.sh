@@ -30,7 +30,7 @@ sync_managed_templates() {
   else
     echo "Warning: could not sync AGENTS.md (missing $script_dir/AGENTS.md)." >&2
   fi
-  for file_name in ARCHITECTURE.md KNOWLEDGE.md README.md; do
+  for file_name in ARCHITECTURE.md KNOWLEDGE.md README.md sz.py; do
     if [[ -f "$repo_templates_dir/$file_name" ]]; then
       cp "$repo_templates_dir/$file_name" "$templates_dir/$file_name"
     else
@@ -45,17 +45,7 @@ sync_managed_templates() {
   done
 }
 
-sync_managed_scripts() {
-  local repo_scripts_dir="$script_dir/scripts"
-  local scripts_dir="$config_dir/scripts"
-  if [[ -d "$repo_scripts_dir" ]]; then
-    mkdir -p "$scripts_dir"
-    cp -R "$repo_scripts_dir/." "$scripts_dir/"
-  fi
-}
-
 sync_managed_templates
-sync_managed_scripts
 
 if [[ ! -f "$config_file" ]]; then
   cat <<'EOF' >"$config_file"
@@ -99,9 +89,6 @@ install_shell_integration_zshrc() {
 echo "Installed: $target_script"
 echo "Config: $config_file"
 echo "Templates: $templates_dir (synced from repo)"
-if [[ -d "$config_dir/scripts" ]]; then
-  echo "Scripts: $config_dir/scripts (synced from repo)"
-fi
 if [[ -f "$shell_integration" ]]; then
   echo "Shell integration: $shell_integration"
   install_shell_integration_zshrc "$shell_integration"

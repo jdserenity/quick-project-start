@@ -686,7 +686,7 @@ test_sz_scans_python_in_repo() {
   mkdir -p "$tmp/src"
   printf '%s\n' 'x = 1' 'y = 2' >"$tmp/src/a.py"
   local out
-  out="$(python3 "$ROOT/scripts/sz.py" "$tmp")"
+  out="$(python3 "$ROOT/templates/sz.py" "$tmp")"
   assert_contains "$out" "src/a.py"
   assert_contains "$out" "total lines: 2"
   rm -rf "$tmp"
@@ -699,18 +699,18 @@ test_sz_skips_node_modules() {
   printf '%s\n' 'x = 1' >"$tmp/node_modules/pkg/a.py"
   printf '%s\n' 'y = 2' >"$tmp/b.py"
   local out
-  out="$(python3 "$ROOT/scripts/sz.py" "$tmp")"
+  out="$(python3 "$ROOT/templates/sz.py" "$tmp")"
   assert_contains "$out" "b.py"
   assert_true "$([[ "$out" != *node_modules* ]] && echo 1)" "should skip node_modules"
   rm -rf "$tmp"
 }
 
-test_install_syncs_scripts() {
+test_install_syncs_sz_template() {
   setup_install_home
   "$INSTALL_SH" >/dev/null
-  assert_file "$HOME/.config/new-proj/scripts/sz.py"
+  assert_file "$HOME/.config/new-proj/templates/sz.py"
   local sz
-  sz="$(<"$HOME/.config/new-proj/scripts/sz.py")"
+  sz="$(<"$HOME/.config/new-proj/templates/sz.py")"
   assert_contains "$sz" "iter_code_files"
   teardown_install_home
 }
@@ -976,7 +976,7 @@ main() {
     test_update_rejects_combined_flags
     test_sz_scans_python_in_repo
     test_sz_skips_node_modules
-    test_install_syncs_scripts
+    test_install_syncs_sz_template
     test_agent_version_shows_current_when_up_to_date
     test_agent_version_shows_stale_and_exits_nonzero
     test_agent_version_reports_missing_version_line

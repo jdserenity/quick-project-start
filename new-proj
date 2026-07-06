@@ -90,10 +90,6 @@ config_dir="$HOME/.config/new-proj"
 bundled_agents="$config_dir/bundled/AGENTS.md"
 config_file="${NEW_PROJ_CONFIG_FILE:-$config_dir/config.env}"
 
-scripts_dir_for_project() {
-  printf '%s\n' "${NEW_PROJ_SCRIPTS_DIR:-${SCRIPTS_DIR:-$config_dir/scripts}}"
-}
-
 find_project_root() {
   local start="$1"
   local root=""
@@ -258,17 +254,18 @@ AGENTS.md version: 1.2.0
 EOF
 }
 
-copy_template_tree() {
-  local src="$1" dest="$2" skip_existing="$3"
-  [[ -d "$src" ]] || return 0
-  local src_file rel dest_file
-  while IFS= read -r -d '' src_file; do
-    rel="${src_file#"$src"/}"
-    dest_file="$dest/$rel"
-    if [[ "$skip_existing" -eq 1 && -e "$dest_file" ]]; then continue; fi
-    mkdir -p "$(dirname "$dest_file")"
-    cp "$src_file" "$dest_file"
-  done < <(find "$src" -type f -print0 2>/dev/null)
+copy_scaffold_scripts() {
+  local project_dir="$1" skip_existing="$2" announce="$3"
+  local file_name template_file target_file
+  for file_name in sz.py; do
+    template_file="$templates_dir/$file_name"
+    target_file="$project_dir/scripts/$file_name"
+    [[ -f "$template_file" ]] || continue
+    if [[ "$skip_existing" -eq 1 && -f "$target_file" ]]; then continue; fi
+    mkdir -p "$project_dir/scripts"
+    cp "$template_file" "$target_file"
+    if [[ "$announce" -eq 1 ]]; then echo "Added: scripts/$file_name" >&2; fi
+  done
 }
 
 ensure_gitignore_template() {
@@ -304,7 +301,6 @@ load_scaffold_config() {
   fi
   scaffold_dir_name="${NEW_PROJ_SCAFFOLD_DIR_NAME:-${SCAFFOLD_DIR_NAME:-docs}}"
   templates_dir="${NEW_PROJ_TEMPLATES_DIR:-${TEMPLATES_DIR:-$config_dir/templates}}"
-  scripts_dir="$(scripts_dir_for_project)"
   if [[ -z "$scaffold_dir_name" || "$scaffold_dir_name" == */* ]]; then
     echo "Error: scaffold folder name must be a single directory name." >&2
     return 1
@@ -344,7 +340,7 @@ run_project_update() {
     echo "Added: .gitignore" >&2
   fi
 
-  copy_template_tree "$scripts_dir" "$project_dir/scripts" 1
+  copy_scaffold_scripts "$project_dir" 1 1
 
   echo "Updated scaffold in: $project_dir" >&2
 }
@@ -382,7 +378,6 @@ fi
 
 scaffold_dir_name="${NEW_PROJ_SCAFFOLD_DIR_NAME:-${SCAFFOLD_DIR_NAME:-docs}}"
 templates_dir="${NEW_PROJ_TEMPLATES_DIR:-${TEMPLATES_DIR:-$config_dir/templates}}"
-scripts_dir="$(scripts_dir_for_project)"
 
 if [[ -z "$scaffold_dir_name" || "$scaffold_dir_name" == */* ]]; then
   echo "Error: scaffold folder name must be a single directory name." >&2
@@ -452,7 +447,7 @@ for file_name in "${files[@]}"; do
   cp "$template_file" "$target_file"
 done
 
-copy_template_tree "$scripts_dir" "$project_dir/scripts" 0
+copy_scaffold_scripts "$project_dir" 0 0
 
 mkdir -p "$scaffold_dir/skills"
 
