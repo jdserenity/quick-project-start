@@ -91,6 +91,8 @@ test_creates_scaffold_and_root_readme() {
   assert_file "$root/docs/ARCHITECTURE.md"
   assert_file "$root/docs/KNOWLEDGE.md"
   assert_file "$root/docs/skills"
+  assert_file "$root/docs/scripts/sz.py"
+  assert_eq "template-sz-marker" "$(tr -d '\n' <"$root/docs/scripts/sz.py")"
   assert_no_file "$root/docs/DEPLOY.md"
   assert_no_file "$root/docs/TODO.md"
   assert_no_file "$root/docs/README.md"
@@ -517,8 +519,8 @@ test_shell_integration_agent_version_does_not_eval_stdout() {
     " 2>&1
   )" || out=$?
   assert_eq "0" "$out"
-  assert_contains "$combined" "project: AGENTS.md version: 1.1.0"
-  assert_contains "$combined" "latest: AGENTS.md version: 1.1.0"
+  assert_contains "$combined" "project: AGENTS.md version: 1.2.0"
+  assert_contains "$combined" "latest: AGENTS.md version: 1.2.0"
   if [[ "$combined" == *"command not found: project:"* ]]; then
     echo "FAIL: shell integration eval'd --agent-version stdout as shell commands"
     exit 1
@@ -541,28 +543,38 @@ test_existing_prints_insert_message() {
   teardown_new_proj_env
 }
 
-test_agent_upgrade_replaces_agents_at_repo_root() {
+test_update_replaces_agents_and_adds_missing_scaffold() {
   setup_new_proj_env
-  local root="$TEST_TMP/upgrade" checkout="$TEST_TMP/checkout"
-  mkdir -p "$root" "$checkout"
+  seed_standard_templates
+  local root="$TEST_TMP/update" checkout="$TEST_TMP/checkout"
+  mkdir -p "$root/docs" "$checkout"
   cp "$NEW_PROJ" "$checkout/new-proj"
   printf '%s\n' 'fresh-from-repo' >"$checkout/AGENTS.md"
   printf '%s\n' 'stale-agent-rules' >"$root/AGENTS.md"
+  printf '%s\n' 'my-architecture' >"$root/docs/ARCHITECTURE.md"
+  printf '%s\n' 'my-knowledge' >"$root/docs/KNOWLEDGE.md"
+  printf '%s\n' 'legacy-deploy' >"$root/docs/DEPLOY.md"
   git -C "$root" init -q
   local stderr
   stderr="$(
     cd "$root"
-    "$checkout/new-proj" --agent-upgrade 2>&1 >/dev/null
+    "$checkout/new-proj" --update 2>&1 >/dev/null
   )"
-  assert_contains "$stderr" "Updated AGENTS.md in: $(cd "$root" && pwd -P)"
+  assert_contains "$stderr" "Updated AGENTS.md"
+  assert_contains "$stderr" "Updated scaffold in: $(cd "$root" && pwd -P)"
   assert_contains "$(<"$root/AGENTS.md")" "fresh-from-repo"
-  assert_no_file "$root/docs/ARCHITECTURE.md"
+  assert_eq "my-architecture" "$(tr -d '\n' <"$root/docs/ARCHITECTURE.md")"
+  assert_eq "my-knowledge" "$(tr -d '\n' <"$root/docs/KNOWLEDGE.md")"
+  assert_eq "legacy-deploy" "$(tr -d '\n' <"$root/docs/DEPLOY.md")"
+  assert_eq "template-sz-marker" "$(tr -d '\n' <"$root/docs/scripts/sz.py")"
+  assert_file "$root/docs/skills"
   teardown_new_proj_env
 }
 
-test_agent_upgrade_from_subfolder_updates_repo_root() {
+test_update_from_subfolder_updates_repo_root() {
   setup_new_proj_env
-  local root="$TEST_TMP/upgrade-sub" checkout="$TEST_TMP/checkout-sub"
+  seed_standard_templates
+  local root="$TEST_TMP/update-sub" checkout="$TEST_TMP/checkout-sub"
   mkdir -p "$root/src" "$checkout"
   cp "$NEW_PROJ" "$checkout/new-proj"
   printf '%s\n' 'fresh-from-repo' >"$checkout/AGENTS.md"
@@ -571,17 +583,19 @@ test_agent_upgrade_from_subfolder_updates_repo_root() {
   local stderr
   stderr="$(
     cd "$root/src"
-    "$checkout/new-proj" --agent-upgrade 2>&1 >/dev/null
+    "$checkout/new-proj" --update 2>&1 >/dev/null
   )"
-  assert_contains "$stderr" "Updated AGENTS.md in: $(cd "$root" && pwd -P)"
+  assert_contains "$stderr" "Updated scaffold in: $(cd "$root" && pwd -P)"
   assert_contains "$(<"$root/AGENTS.md")" "fresh-from-repo"
   assert_no_file "$root/src/AGENTS.md"
+  assert_file "$root/docs/scripts/sz.py"
   teardown_new_proj_env
 }
 
-test_agent_upgrade_no_git_walks_up_to_agents_md() {
+test_update_no_git_walks_up_to_agents_md() {
   setup_new_proj_env
-  local root="$TEST_TMP/upgrade-walk" bin_only="$TEST_TMP/bin-only-walk"
+  seed_standard_templates
+  local root="$TEST_TMP/update-walk" bin_only="$TEST_TMP/bin-only-walk"
   export HOME="$TEST_TMP/home"
   mkdir -p "$root/src" "$bin_only" "$HOME/.config/new-proj/bundled"
   cp "$NEW_PROJ" "$bin_only/new-proj"
@@ -590,22 +604,22 @@ test_agent_upgrade_no_git_walks_up_to_agents_md() {
   local stderr
   stderr="$(
     cd "$root/src"
-    "$bin_only/new-proj" --agent-upgrade 2>&1 >/dev/null
+    "$bin_only/new-proj" --update 2>&1 >/dev/null
   )"
-  assert_contains "$stderr" "Updated AGENTS.md in: $(cd "$root" && pwd -P)"
+  assert_contains "$stderr" "Updated scaffold in: $(cd "$root" && pwd -P)"
   assert_eq "bundled-agents" "$(tr -d '\n' <"$root/AGENTS.md")"
   assert_no_file "$root/src/AGENTS.md"
   teardown_new_proj_env
 }
 
-test_agent_upgrade_errors_without_project_root() {
+test_update_errors_without_project_root() {
   setup_new_proj_env
-  local root="$TEST_TMP/upgrade-missing"
+  local root="$TEST_TMP/update-missing"
   mkdir -p "$root/src"
   local out=0 stderr
   stderr="$(
     cd "$root/src"
-    run_new_proj --agent-upgrade 2>&1 >/dev/null
+    run_new_proj --update 2>&1 >/dev/null
   )" || out=$?
   assert_eq "1" "$out"
   assert_contains "$stderr" "could not find project root"
@@ -613,9 +627,10 @@ test_agent_upgrade_errors_without_project_root() {
   teardown_new_proj_env
 }
 
-test_agent_upgrade_uses_bundled_when_not_in_checkout() {
+test_update_uses_bundled_when_not_in_checkout() {
   setup_new_proj_env
-  local root="$TEST_TMP/bundled-upgrade" bin_only="$TEST_TMP/bin-only"
+  seed_standard_templates
+  local root="$TEST_TMP/bundled-update" bin_only="$TEST_TMP/bin-only"
   export HOME="$TEST_TMP/home"
   mkdir -p "$root" "$bin_only" "$HOME/.config/new-proj/bundled"
   cp "$NEW_PROJ" "$bin_only/new-proj"
@@ -625,27 +640,78 @@ test_agent_upgrade_uses_bundled_when_not_in_checkout() {
   local stderr
   stderr="$(
     cd "$root"
-    "$bin_only/new-proj" --agent-upgrade 2>&1 >/dev/null
+    "$bin_only/new-proj" --update 2>&1 >/dev/null
   )"
-  assert_contains "$stderr" "Updated AGENTS.md in: $(cd "$root" && pwd -P)"
+  assert_contains "$stderr" "Updated scaffold in: $(cd "$root" && pwd -P)"
   assert_eq "bundled-agents" "$(tr -d '\n' <"$root/AGENTS.md")"
   teardown_new_proj_env
 }
 
-test_agent_upgrade_rejects_extra_args() {
+test_update_skips_existing_scripts() {
+  setup_new_proj_env
+  seed_standard_templates
+  local root="$TEST_TMP/update-skip-script"
+  mkdir -p "$root/docs/scripts"
+  printf '%s\n' 'stale-agent-rules' >"$root/AGENTS.md"
+  printf '%s\n' 'custom-sz' >"$root/docs/scripts/sz.py"
+  git -C "$root" init -q
+  (
+    cd "$root"
+    run_new_proj --update >/dev/null
+  )
+  assert_eq "custom-sz" "$(tr -d '\n' <"$root/docs/scripts/sz.py")"
+  teardown_new_proj_env
+}
+
+test_update_rejects_extra_args() {
   setup_new_proj_env
   local out=0
-  run_new_proj --agent-upgrade "x" 2>&1 >/dev/null || out=$?
+  run_new_proj --update "x" 2>&1 >/dev/null || out=$?
   assert_eq "1" "$out"
   teardown_new_proj_env
 }
 
-test_agent_upgrade_rejects_combined_flags() {
+test_update_rejects_combined_flags() {
   setup_new_proj_env
   local out=0
-  run_new_proj --agent-upgrade --existing 2>&1 >/dev/null || out=$?
+  run_new_proj --update --existing 2>&1 >/dev/null || out=$?
   assert_eq "1" "$out"
   teardown_new_proj_env
+}
+
+test_sz_scans_python_in_repo() {
+  local tmp
+  tmp="$(mktemp -d)"
+  mkdir -p "$tmp/src"
+  printf '%s\n' 'x = 1' 'y = 2' >"$tmp/src/a.py"
+  local out
+  out="$(python3 "$ROOT/templates/scripts/sz.py" "$tmp")"
+  assert_contains "$out" "src/a.py"
+  assert_contains "$out" "total lines: 2"
+  rm -rf "$tmp"
+}
+
+test_sz_skips_node_modules() {
+  local tmp
+  tmp="$(mktemp -d)"
+  mkdir -p "$tmp/node_modules/pkg"
+  printf '%s\n' 'x = 1' >"$tmp/node_modules/pkg/a.py"
+  printf '%s\n' 'y = 2' >"$tmp/b.py"
+  local out
+  out="$(python3 "$ROOT/templates/scripts/sz.py" "$tmp")"
+  assert_contains "$out" "b.py"
+  assert_true "$([[ "$out" != *node_modules* ]] && echo 1)" "should skip node_modules"
+  rm -rf "$tmp"
+}
+
+test_install_syncs_scripts_template() {
+  setup_install_home
+  "$INSTALL_SH" >/dev/null
+  assert_file "$HOME/.config/new-proj/templates/scripts/sz.py"
+  local sz
+  sz="$(<"$HOME/.config/new-proj/templates/scripts/sz.py")"
+  assert_contains "$sz" "iter_code_files"
+  teardown_install_home
 }
 
 test_agent_version_shows_current_when_up_to_date() {
@@ -702,7 +768,7 @@ test_agent_version_reports_missing_version_line() {
   )" || out=$?
   assert_eq "1" "$out"
   assert_contains "$stdout" "project: (no version — last line: legacy-agent-rules)"
-  assert_contains "$stdout" "latest: AGENTS.md version: 1.1.0"
+  assert_contains "$stdout" "latest: AGENTS.md version: 1.2.0"
   teardown_new_proj_env
 }
 
@@ -721,8 +787,8 @@ test_agent_version_from_subfolder() {
   )"
   out=$?
   assert_eq "0" "$out"
-  assert_contains "$stdout" "project: AGENTS.md version: 1.1.0"
-  assert_contains "$stdout" "latest: AGENTS.md version: 1.1.0"
+  assert_contains "$stdout" "project: AGENTS.md version: 1.2.0"
+  assert_contains "$stdout" "latest: AGENTS.md version: 1.2.0"
   teardown_new_proj_env
 }
 
@@ -817,7 +883,7 @@ test_install_refreshes_templates_on_every_run() {
   agents="$(<"$HOME/.config/new-proj/templates/AGENTS.md")"
   readme="$(<"$HOME/.config/new-proj/templates/README.md")"
   knowledge="$(<"$HOME/.config/new-proj/templates/KNOWLEDGE.md")"
-  assert_contains "$agents" "AGENTS.md version: 1.1.0"
+  assert_contains "$agents" "AGENTS.md version: 1.2.0"
   assert_contains "$agents" "docs/KNOWLEDGE.md"
   assert_contains "$readme" "Brief description"
   assert_contains "$knowledge" "Hard-won lessons"
@@ -899,13 +965,17 @@ main() {
     test_shell_integration_streams_stderr
     test_shell_integration_agent_version_does_not_eval_stdout
     test_existing_prints_insert_message
-    test_agent_upgrade_replaces_agents_at_repo_root
-    test_agent_upgrade_from_subfolder_updates_repo_root
-    test_agent_upgrade_no_git_walks_up_to_agents_md
-    test_agent_upgrade_errors_without_project_root
-    test_agent_upgrade_uses_bundled_when_not_in_checkout
-    test_agent_upgrade_rejects_extra_args
-    test_agent_upgrade_rejects_combined_flags
+    test_update_replaces_agents_and_adds_missing_scaffold
+    test_update_from_subfolder_updates_repo_root
+    test_update_no_git_walks_up_to_agents_md
+    test_update_errors_without_project_root
+    test_update_uses_bundled_when_not_in_checkout
+    test_update_skips_existing_scripts
+    test_update_rejects_extra_args
+    test_update_rejects_combined_flags
+    test_sz_scans_python_in_repo
+    test_sz_skips_node_modules
+    test_install_syncs_scripts_template
     test_agent_version_shows_current_when_up_to_date
     test_agent_version_shows_stale_and_exits_nonzero
     test_agent_version_reports_missing_version_line

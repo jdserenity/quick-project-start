@@ -40,6 +40,10 @@ sync_managed_templates() {
   if [[ -f "$repo_templates_dir/.gitignore" ]]; then
     cp "$repo_templates_dir/.gitignore" "$templates_dir/.gitignore"
   fi
+  if [[ -d "$repo_templates_dir/scripts" ]]; then
+    mkdir -p "$templates_dir/scripts"
+    cp -R "$repo_templates_dir/scripts/." "$templates_dir/scripts/"
+  fi
   for deprecated in DEPLOY.md TODO.md; do
     rm -f "$templates_dir/$deprecated"
   done

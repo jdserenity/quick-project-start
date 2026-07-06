@@ -126,6 +126,8 @@ seed_standard_templates() {
   printf '%s\n' 'custom-arch' >"$NEW_PROJ_TEMPLATES_DIR/ARCHITECTURE.md"
   printf '%s\n' 'custom-knowledge' >"$NEW_PROJ_TEMPLATES_DIR/KNOWLEDGE.md"
   printf '%s\n' 'node_modules/' >"$NEW_PROJ_TEMPLATES_DIR/.gitignore"
+  mkdir -p "$NEW_PROJ_TEMPLATES_DIR/scripts"
+  printf '%s\n' 'template-sz-marker' >"$NEW_PROJ_TEMPLATES_DIR/scripts/sz.py"
 }
 
 teardown_new_proj_env() {

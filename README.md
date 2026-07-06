@@ -33,7 +33,7 @@ cd /path/to/existing-project
 new-proj --existing                # add AGENTS.md + docs/ here; git + GitHub unless --no-repo; no cd
 new-proj --existing --no-repo      # scaffold only; skip git/GitHub
 cd /path/to/existing-project
-new-proj --agent-upgrade           # replace project-root AGENTS.md with newest template; no other changes
+new-proj --update                  # refresh AGENTS.md and add missing scaffold files; no deletions
 new-proj --agent-version           # show this project's AGENTS.md version vs latest (exit 1 if behind)
 ```
 
@@ -49,6 +49,7 @@ Creates:
 - scaffold folder (default `docs`) with:
   - `ARCHITECTURE.md`
   - `KNOWLEDGE.md`
+  - `scripts/sz.py` (code size stats utility)
   - `skills/` (empty folder)
 
 Requires `git` and [GitHub CLI](https://cli.github.com/) (`gh`) logged in (`gh auth login`). If either is missing or `gh repo create` fails, the local project is still created and you get a warning.
@@ -70,6 +71,7 @@ Global templates (refreshed on every `./install.sh`):
   - `KNOWLEDGE.md`
   - `README.md`
   - `.gitignore`
+  - `scripts/` (e.g. `scripts/sz.py`) — copied under scaffold dir as `docs/scripts/`
 
 Per-run overrides:
 

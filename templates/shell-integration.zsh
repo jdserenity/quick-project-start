@@ -2,7 +2,7 @@
 new-proj() {
   local bin="${NEW_PROJ_BIN:-$HOME/.local/bin/new-proj}"
   case " $* " in
-    *' --agent-version '*|*' --agent-upgrade '*|*' --existing '*|*' -h '*|*' --help '*)
+    *' --agent-version '*|*' --update '*|*' --existing '*|*' -h '*|*' --help '*)
       "$bin" "$@"
       return $?
       ;;
