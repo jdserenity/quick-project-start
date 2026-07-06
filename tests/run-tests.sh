@@ -91,12 +91,13 @@ test_creates_scaffold_and_root_readme() {
   assert_file "$root/docs/ARCHITECTURE.md"
   assert_file "$root/docs/KNOWLEDGE.md"
   assert_file "$root/docs/skills"
-  assert_file "$root/docs/scripts/sz.py"
-  assert_eq "template-sz-marker" "$(tr -d '\n' <"$root/docs/scripts/sz.py")"
+  assert_file "$root/scripts/sz.py"
+  assert_eq "template-sz-marker" "$(tr -d '\n' <"$root/scripts/sz.py")"
   assert_no_file "$root/docs/DEPLOY.md"
   assert_no_file "$root/docs/TODO.md"
   assert_no_file "$root/docs/README.md"
   assert_no_file "$root/docs/AGENTS.md"
+  assert_no_file "$root/docs/scripts"
 
   assert_eq "custom-readme" "$(tr -d '\n' <"$root/README.md")"
   assert_eq "custom-agent-rules" "$(tr -d '\n' <"$root/AGENTS.md")"
@@ -566,7 +567,7 @@ test_update_replaces_agents_and_adds_missing_scaffold() {
   assert_eq "my-architecture" "$(tr -d '\n' <"$root/docs/ARCHITECTURE.md")"
   assert_eq "my-knowledge" "$(tr -d '\n' <"$root/docs/KNOWLEDGE.md")"
   assert_eq "legacy-deploy" "$(tr -d '\n' <"$root/docs/DEPLOY.md")"
-  assert_eq "template-sz-marker" "$(tr -d '\n' <"$root/docs/scripts/sz.py")"
+  assert_eq "template-sz-marker" "$(tr -d '\n' <"$root/scripts/sz.py")"
   assert_file "$root/docs/skills"
   teardown_new_proj_env
 }
@@ -588,7 +589,7 @@ test_update_from_subfolder_updates_repo_root() {
   assert_contains "$stderr" "Updated scaffold in: $(cd "$root" && pwd -P)"
   assert_contains "$(<"$root/AGENTS.md")" "fresh-from-repo"
   assert_no_file "$root/src/AGENTS.md"
-  assert_file "$root/docs/scripts/sz.py"
+  assert_file "$root/scripts/sz.py"
   teardown_new_proj_env
 }
 
@@ -651,15 +652,15 @@ test_update_skips_existing_scripts() {
   setup_new_proj_env
   seed_standard_templates
   local root="$TEST_TMP/update-skip-script"
-  mkdir -p "$root/docs/scripts"
+  mkdir -p "$root/scripts"
   printf '%s\n' 'stale-agent-rules' >"$root/AGENTS.md"
-  printf '%s\n' 'custom-sz' >"$root/docs/scripts/sz.py"
+  printf '%s\n' 'custom-sz' >"$root/scripts/sz.py"
   git -C "$root" init -q
   (
     cd "$root"
     run_new_proj --update >/dev/null
   )
-  assert_eq "custom-sz" "$(tr -d '\n' <"$root/docs/scripts/sz.py")"
+  assert_eq "custom-sz" "$(tr -d '\n' <"$root/scripts/sz.py")"
   teardown_new_proj_env
 }
 
@@ -685,7 +686,7 @@ test_sz_scans_python_in_repo() {
   mkdir -p "$tmp/src"
   printf '%s\n' 'x = 1' 'y = 2' >"$tmp/src/a.py"
   local out
-  out="$(python3 "$ROOT/templates/scripts/sz.py" "$tmp")"
+  out="$(python3 "$ROOT/scripts/sz.py" "$tmp")"
   assert_contains "$out" "src/a.py"
   assert_contains "$out" "total lines: 2"
   rm -rf "$tmp"
@@ -698,18 +699,18 @@ test_sz_skips_node_modules() {
   printf '%s\n' 'x = 1' >"$tmp/node_modules/pkg/a.py"
   printf '%s\n' 'y = 2' >"$tmp/b.py"
   local out
-  out="$(python3 "$ROOT/templates/scripts/sz.py" "$tmp")"
+  out="$(python3 "$ROOT/scripts/sz.py" "$tmp")"
   assert_contains "$out" "b.py"
   assert_true "$([[ "$out" != *node_modules* ]] && echo 1)" "should skip node_modules"
   rm -rf "$tmp"
 }
 
-test_install_syncs_scripts_template() {
+test_install_syncs_scripts() {
   setup_install_home
   "$INSTALL_SH" >/dev/null
-  assert_file "$HOME/.config/new-proj/templates/scripts/sz.py"
+  assert_file "$HOME/.config/new-proj/scripts/sz.py"
   local sz
-  sz="$(<"$HOME/.config/new-proj/templates/scripts/sz.py")"
+  sz="$(<"$HOME/.config/new-proj/scripts/sz.py")"
   assert_contains "$sz" "iter_code_files"
   teardown_install_home
 }
@@ -975,7 +976,7 @@ main() {
     test_update_rejects_combined_flags
     test_sz_scans_python_in_repo
     test_sz_skips_node_modules
-    test_install_syncs_scripts_template
+    test_install_syncs_scripts
     test_agent_version_shows_current_when_up_to_date
     test_agent_version_shows_stale_and_exits_nonzero
     test_agent_version_reports_missing_version_line

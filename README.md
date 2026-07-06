@@ -22,7 +22,7 @@ git pull
 ./install.sh
 ```
 
-`install.sh` refreshes the binary, `~/.config/new-proj/bundled/AGENTS.md`, and all files under `~/.config/new-proj/templates/` from this repo.
+`install.sh` refreshes the binary, `~/.config/new-proj/bundled/AGENTS.md`, files under `~/.config/new-proj/templates/`, and files under `~/.config/new-proj/scripts/` from this repo.
 
 ## Usage
 
@@ -45,11 +45,10 @@ Creates:
 
 - `~/Documents/coding-temp/my-project/`
 - By default: git repository initialized with an `init` commit on `main`, and a public GitHub repo (same name as the project) via `gh`, with initial push
-- root `AGENTS.md`, `README.md`, and `.gitignore`
+- root `AGENTS.md`, `README.md`, `.gitignore`, and `scripts/` (e.g. `scripts/sz.py`)
 - scaffold folder (default `docs`) with:
   - `ARCHITECTURE.md`
   - `KNOWLEDGE.md`
-  - `scripts/sz.py` (code size stats utility)
   - `skills/` (empty folder)
 
 Requires `git` and [GitHub CLI](https://cli.github.com/) (`gh`) logged in (`gh auth login`). If either is missing or `gh repo create` fails, the local project is still created and you get a warning.
@@ -62,6 +61,7 @@ Global runtime config:
   - `SCAFFOLD_DIR_NAME="docs"`
   - optional: `BASE_DIR="/some/path"`
   - optional: `TEMPLATES_DIR="/some/path"`
+  - optional: `SCRIPTS_DIR="/some/path"`
 
 Global templates (refreshed on every `./install.sh`):
 
@@ -71,13 +71,18 @@ Global templates (refreshed on every `./install.sh`):
   - `KNOWLEDGE.md`
   - `README.md`
   - `.gitignore`
-  - `scripts/` (e.g. `scripts/sz.py`) — copied under scaffold dir as `docs/scripts/`
+
+Global scripts (refreshed on every `./install.sh`; copied to project root `scripts/`):
+
+- `~/.config/new-proj/scripts/`
+  - `sz.py` (code size stats utility)
 
 Per-run overrides:
 
 - `NEW_PROJ_BASE_DIR="/some/path" new-proj "my-project"`
 - `NEW_PROJ_SCAFFOLD_DIR_NAME="blueprint" new-proj "my-project"`
 - `NEW_PROJ_TEMPLATES_DIR="/some/path" new-proj "my-project"`
+- `NEW_PROJ_SCRIPTS_DIR="/some/path" new-proj "my-project"`
 
 ## Tests
 
