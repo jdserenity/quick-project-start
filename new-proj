@@ -8,7 +8,7 @@ usage() {
   echo "       new-proj --agent-version   # print this project's scaffold version and the latest"
 }
 
-EMBEDDED_SCAFFOLD_VERSION=2.1.0
+EMBEDDED_SCAFFOLD_VERSION=2.2.0
 SCAFFOLD_AGENT_FILES=(AGENT-COMMS.md AGENT-WORKFLOW.md)
 SCAFFOLD_DOC_FILES=(ARCH-HUMAN.md ARCH-LLM.md PROJECT-KNOWLEDGE.md)
 
@@ -214,6 +214,7 @@ Definition of done
 1. It does what we agreed it should do.
 2. Automated tests cover that behavior.
 3. scaffold/ARCH-LLM.md and scaffold/PROJECT-KNOWLEDGE.md updated when facts or lessons change.
+4. Work is committed in small logical commits — not left uncommitted, not batched at the end.
 
 scaffold version: $EMBEDDED_SCAFFOLD_VERSION
 EOF

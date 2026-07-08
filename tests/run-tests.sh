@@ -530,8 +530,8 @@ test_shell_integration_agent_version_does_not_eval_stdout() {
     " 2>&1
   )" || out=$?
   assert_eq "0" "$out"
-  assert_contains "$combined" "project: scaffold version: 2.1.0"
-  assert_contains "$combined" "latest: scaffold version: 2.1.0"
+  assert_contains "$combined" "project: scaffold version: 2.2.0"
+  assert_contains "$combined" "latest: scaffold version: 2.2.0"
   if [[ "$combined" == *"command not found: project:"* ]]; then
     echo "FAIL: shell integration eval'd --agent-version stdout as shell commands"
     exit 1
@@ -759,7 +759,7 @@ test_agent_version_shows_stale_and_exits_nonzero() {
   local root="$TEST_TMP/agent-ver-stale" checkout="$TEST_TMP/checkout-ver-stale"
   mkdir -p "$root/scaffold" "$checkout/scaffold"
   cp "$NEW_PROJ" "$checkout/new-proj"
-  printf '%s\n' 'scaffold version: 2.1.0' >"$checkout/scaffold/AGENT-WORKFLOW.md"
+  printf '%s\n' 'scaffold version: 2.2.0' >"$checkout/scaffold/AGENT-WORKFLOW.md"
   printf '%s\n' 'scaffold version: 1.0.0' >"$root/scaffold/AGENT-WORKFLOW.md"
   git -C "$root" init -q
   local out=0 stdout
@@ -769,7 +769,7 @@ test_agent_version_shows_stale_and_exits_nonzero() {
   )" || out=$?
   assert_eq "1" "$out"
   assert_contains "$stdout" "project: scaffold version: 1.0.0"
-  assert_contains "$stdout" "latest: scaffold version: 2.1.0"
+  assert_contains "$stdout" "latest: scaffold version: 2.2.0"
   teardown_new_proj_env
 }
 
@@ -789,7 +789,7 @@ test_agent_version_reports_missing_version_line() {
   )" || out=$?
   assert_eq "1" "$out"
   assert_contains "$stdout" "project: (no version — last line: legacy-agent-workflow)"
-  assert_contains "$stdout" "latest: scaffold version: 2.1.0"
+  assert_contains "$stdout" "latest: scaffold version: 2.2.0"
   teardown_new_proj_env
 }
 
@@ -814,8 +814,8 @@ test_agent_version_from_subfolder() {
   )"
   out=$?
   assert_eq "0" "$out"
-  assert_contains "$stdout" "project: scaffold version: 2.1.0"
-  assert_contains "$stdout" "latest: scaffold version: 2.1.0"
+  assert_contains "$stdout" "project: scaffold version: 2.2.0"
+  assert_contains "$stdout" "latest: scaffold version: 2.2.0"
   teardown_new_proj_env
 }
 
@@ -912,7 +912,7 @@ test_install_refreshes_templates_on_every_run() {
   workflow="$(<"$HOME/.config/new-proj/templates/AGENT-WORKFLOW.md")"
   readme="$(<"$HOME/.config/new-proj/templates/README.md")"
   understanding="$(<"$HOME/.config/new-proj/templates/PROJECT-KNOWLEDGE.md")"
-  assert_contains "$workflow" "scaffold version: 2.1.0"
+  assert_contains "$workflow" "scaffold version: 2.2.0"
   assert_contains "$workflow" "scaffold/PROJECT-KNOWLEDGE.md"
   assert_contains "$workflow" "One home per fact"
   assert_contains "$readme" "Brief description"
