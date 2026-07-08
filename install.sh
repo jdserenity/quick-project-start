@@ -10,6 +10,7 @@ config_dir="$HOME/.config/new-proj"
 config_file="$config_dir/config.env"
 templates_dir="$config_dir/templates"
 repo_templates_dir="$script_dir/templates"
+repo_scaffold_dir="$script_dir/scaffold"
 
 if [[ ! -f "$source_script" ]]; then
   echo "Error: could not find source script at $source_script" >&2
@@ -24,13 +25,15 @@ bundled_dir="$config_dir/bundled"
 mkdir -p "$bundled_dir"
 
 sync_managed_templates() {
-  if [[ -f "$script_dir/AGENTS.md" ]]; then
-    cp "$script_dir/AGENTS.md" "$bundled_dir/AGENTS.md"
-    cp "$script_dir/AGENTS.md" "$templates_dir/AGENTS.md"
-  else
-    echo "Warning: could not sync AGENTS.md (missing $script_dir/AGENTS.md)." >&2
-  fi
-  for file_name in ARCHITECTURE.md KNOWLEDGE.md README.md sz.py; do
+  for file_name in AGENT-COMMS.md AGENT-WORKFLOW.md; do
+    if [[ -f "$repo_scaffold_dir/$file_name" ]]; then
+      cp "$repo_scaffold_dir/$file_name" "$bundled_dir/$file_name"
+      cp "$repo_scaffold_dir/$file_name" "$templates_dir/$file_name"
+    else
+      echo "Warning: missing scaffold agent file $repo_scaffold_dir/$file_name; skipped." >&2
+    fi
+  done
+  for file_name in ARCH-HUMAN.md ARCH-LLM.md PROJECT-KNOWLEDGE.md README.md AGENTS.md sz.py; do
     if [[ -f "$repo_templates_dir/$file_name" ]]; then
       cp "$repo_templates_dir/$file_name" "$templates_dir/$file_name"
     else
@@ -40,8 +43,9 @@ sync_managed_templates() {
   if [[ -f "$repo_templates_dir/.gitignore" ]]; then
     cp "$repo_templates_dir/.gitignore" "$templates_dir/.gitignore"
   fi
-  for deprecated in DEPLOY.md TODO.md; do
+  for deprecated in DEPLOY.md TODO.md ARCHITECTURE.md KNOWLEDGE.md AGENT-UNDERSTANDING.md; do
     rm -f "$templates_dir/$deprecated"
+    rm -f "$bundled_dir/$deprecated"
   done
 }
 
@@ -49,7 +53,7 @@ sync_managed_templates
 
 if [[ ! -f "$config_file" ]]; then
   cat <<'EOF' >"$config_file"
-SCAFFOLD_DIR_NAME="docs"
+SCAFFOLD_DIR_NAME="scaffold"
 EOF
 fi
 
