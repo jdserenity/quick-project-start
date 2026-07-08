@@ -39,6 +39,7 @@ A change is done only when:
 1. It does what we agreed it should do.
 2. Automated tests cover that behavior (new tests for new behavior; changed tests when behavior changes). Say which test file(s) or command proves it so anyone can rerun the same check.
 3. If facts changed for the product or system, scaffold/ARCH-LLM.md is updated (minimal deltas; no padding). Update scaffold/ARCH-HUMAN.md when the maintainer needs a readable summary. If you learned something worth keeping for the next session, scaffold/PROJECT-KNOWLEDGE.md is updated too.
+4. Work is committed in small logical commits — not left uncommitted, not batched into one mega-commit at the end. Each commit should be one coherent unit you can describe in one short message.
 How to pick test type (project default):
 1. Unit: small pieces of logic with no real database or network.
 2. Integration: behavior that really depends on HTTP + DB, or webhooks / OAuth / Stripe — exercise real boundaries with test keys, stubs, or recorded fixtures as appropriate.
@@ -57,4 +58,4 @@ Documentation Rules
 - Separate confirmed decisions from open questions clearly. Open questions go to the maintainer in chat, not to docs/TODO.md.
 - When you change scaffold agent files in the quick-project-start repo, bump the semver on the last line of this file (`scaffold version: X.Y.Z`).
 
-scaffold version: 2.1.0
+scaffold version: 2.2.0
