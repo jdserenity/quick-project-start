@@ -1,5 +1,5 @@
 # Architecture (agent reference)
 
-Confirmed product and system facts for this project. Decisions only — no open questions or lessons learned (those belong in scaffold/PROJECT-KNOWLEDGE.md).
+Architecture overview built for agents. Dense and compact — optimized so an agent can understand the system without grepping the whole codebase.
 
-Dense, factual entries agents can grep and parse. Update when product scope, stack, or design decisions change.
+Confirmed product and system facts only. No open questions or lessons (those belong in scaffold/PROJECT-KNOWLEDGE.md).

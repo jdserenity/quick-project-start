@@ -1,5 +1,5 @@
 # Architecture (human-readable)
 
-What this project is, what it does, and how the pieces fit together. Write for the maintainer — plain language, short sections.
+Compact human-readable overview of this project's system architecture and codebase. The maintainer likes diagrams and visual explainers.
 
-Confirmed facts and decisions only. Open questions and lessons learned belong in chat or scaffold/PROJECT-KNOWLEDGE.md.
+Confirmed facts and decisions only. Lessons belong in scaffold/PROJECT-KNOWLEDGE.md — not here.

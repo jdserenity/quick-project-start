@@ -187,30 +187,25 @@ write_embedded_scaffold_agent_files() {
   local dest_dir="$1"
   mkdir -p "$dest_dir"
   cat <<'EOF' >"$dest_dir/AGENT-COMMS.md"
-Communication with the maintainer (read this first)
+# Documentation layout
+- Project documentation lives under scaffold/: scaffold/ARCH-HUMAN.md, scaffold/ARCH-LLM.md, scaffold/PROJECT-KNOWLEDGE.md, and scaffold/skills/.
+- One home per fact: if you are going to record something in one file, do not record it in another.
+
+# Communication with the maintainer
 The maintainer is still leveling up as an engineer. Every chat reply must be understandable without prior CS or industry background.
 
 - Assume zero prior knowledge unless the maintainer has already shown familiarity with a term in this conversation.
 - Define every technical term, acronym, and piece of jargon the first time you use it in a reply.
-- Prefer concrete examples over abstract architecture language.
 - Do not move long explainers into scaffold/ARCH-HUMAN.md — teach in chat unless the maintainer explicitly asks for an explanation in the repo.
 EOF
   cat <<EOF >"$dest_dir/AGENT-WORKFLOW.md"
-Documentation layout (read this first)
-- Agent rules live under scaffold/: scaffold/AGENT-COMMS.md and scaffold/AGENT-WORKFLOW.md (this file).
-- Project documentation: scaffold/ARCH-HUMAN.md, scaffold/ARCH-LLM.md, scaffold/PROJECT-KNOWLEDGE.md, scaffold/skills/.
-- README.md stays at the repository root.
-
-Code style
+# Code style
 - Indentation: 2 spaces everywhere (Python and TypeScript).
 
-Workflow Rules
+# Commit Rules
 - Create commits without being asked — that is normal on this project. Only push when the user explicitly asks.
-- When the user states durable facts in conversation, write confirmed items to scaffold/ARCH-LLM.md.
-- When you learn something non-obvious, add it to scaffold/PROJECT-KNOWLEDGE.md.
-- Tests are required for every implemented behavior.
 
-Definition of done
+# Definition of done
 1. It does what we agreed it should do.
 2. Automated tests cover that behavior.
 3. scaffold/ARCH-LLM.md and scaffold/PROJECT-KNOWLEDGE.md updated when facts or lessons change.

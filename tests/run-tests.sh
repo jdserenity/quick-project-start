@@ -143,10 +143,11 @@ test_seeds_scaffold_agent_template_when_missing() {
   run_new_proj "delta" >/dev/null
 
   assert_file "$NEW_PROJ_TEMPLATES_DIR/AGENT-WORKFLOW.md"
-  local workflow_template
+  local workflow_template comms_template
   workflow_template="$(<"$NEW_PROJ_TEMPLATES_DIR/AGENT-WORKFLOW.md")"
+  comms_template="$(<"$NEW_PROJ_TEMPLATES_DIR/AGENT-COMMS.md")"
   assert_contains "$workflow_template" "Indentation: 2 spaces"
-  assert_contains "$workflow_template" "scaffold/PROJECT-KNOWLEDGE.md"
+  assert_contains "$comms_template" "scaffold/PROJECT-KNOWLEDGE.md"
 
   local project_workflow
   project_workflow="$(<"$NEW_PROJ_BASE_DIR/delta/scaffold/AGENT-WORKFLOW.md")"
@@ -894,10 +895,11 @@ test_install_creates_config_and_templates_when_missing() {
   assert_file "$HOME/.config/new-proj/templates/AGENTS.md"
   assert_file "$HOME/.config/new-proj/templates/README.md"
   assert_file "$HOME/.config/new-proj/templates/.gitignore"
-  local workflow
+  local workflow comms
   workflow="$(<"$HOME/.config/new-proj/templates/AGENT-WORKFLOW.md")"
+  comms="$(<"$HOME/.config/new-proj/templates/AGENT-COMMS.md")"
   assert_contains "$workflow" "Indentation: 2 spaces"
-  assert_contains "$workflow" "scaffold/PROJECT-KNOWLEDGE.md"
+  assert_contains "$comms" "scaffold/PROJECT-KNOWLEDGE.md"
   teardown_install_home
 }
 
@@ -908,13 +910,14 @@ test_install_refreshes_templates_on_every_run() {
   printf '%s\n' 'STALE_WORKFLOW' >"$HOME/.config/new-proj/templates/AGENT-WORKFLOW.md"
   printf '%s\n' 'STALE_README' >"$HOME/.config/new-proj/templates/README.md"
   "$INSTALL_SH" >/dev/null
-  local workflow readme understanding
+  local workflow comms readme understanding
   workflow="$(<"$HOME/.config/new-proj/templates/AGENT-WORKFLOW.md")"
+  comms="$(<"$HOME/.config/new-proj/templates/AGENT-COMMS.md")"
   readme="$(<"$HOME/.config/new-proj/templates/README.md")"
   understanding="$(<"$HOME/.config/new-proj/templates/PROJECT-KNOWLEDGE.md")"
   assert_contains "$workflow" "scaffold version: 2.2.0"
-  assert_contains "$workflow" "scaffold/PROJECT-KNOWLEDGE.md"
-  assert_contains "$workflow" "One home per fact"
+  assert_contains "$comms" "scaffold/PROJECT-KNOWLEDGE.md"
+  assert_contains "$comms" "One home per fact"
   assert_contains "$readme" "Brief description"
   assert_contains "$understanding" "Hard-won lessons"
   teardown_install_home
