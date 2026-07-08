@@ -87,22 +87,26 @@ test_creates_scaffold_and_root_readme() {
   local root="$NEW_PROJ_BASE_DIR/alpha"
   assert_file "$root/README.md"
   assert_file "$root/.gitignore"
-  assert_file "$root/AGENTS.md"
-  assert_file "$root/docs/ARCHITECTURE.md"
-  assert_file "$root/docs/KNOWLEDGE.md"
-  assert_file "$root/docs/skills"
+  assert_file "$root/scaffold/ARCH-HUMAN.md"
+  assert_file "$root/scaffold/ARCH-LLM.md"
+  assert_file "$root/scaffold/PROJECT-KNOWLEDGE.md"
+  assert_file "$root/scaffold/skills"
   assert_file "$root/scripts/sz.py"
   assert_eq "template-sz-marker" "$(tr -d '\n' <"$root/scripts/sz.py")"
-  assert_no_file "$root/docs/DEPLOY.md"
-  assert_no_file "$root/docs/TODO.md"
-  assert_no_file "$root/docs/README.md"
-  assert_no_file "$root/docs/AGENTS.md"
-  assert_no_file "$root/docs/scripts"
+  assert_no_file "$root/scaffold/DEPLOY.md"
+  assert_no_file "$root/scaffold/TODO.md"
+  assert_no_file "$root/scaffold/README.md"
+  assert_file "$root/AGENTS.md"
+  assert_no_file "$root/scaffold/AGENTS.md"
+  assert_no_file "$root/scaffold/scripts"
 
+  assert_eq "custom-agents-pointer" "$(tr -d '\n' <"$root/AGENTS.md")"
   assert_eq "custom-readme" "$(tr -d '\n' <"$root/README.md")"
-  assert_eq "custom-agent-rules" "$(tr -d '\n' <"$root/AGENTS.md")"
-  assert_eq "custom-arch" "$(tr -d '\n' <"$root/docs/ARCHITECTURE.md")"
-  assert_eq "custom-knowledge" "$(tr -d '\n' <"$root/docs/KNOWLEDGE.md")"
+  assert_eq "custom-agent-comms" "$(tr -d '\n' <"$root/scaffold/AGENT-COMMS.md")"
+  assert_eq "custom-agent-workflow" "$(tr -d '\n' <"$root/scaffold/AGENT-WORKFLOW.md")"
+  assert_eq "custom-arch-human" "$(tr -d '\n' <"$root/scaffold/ARCH-HUMAN.md")"
+  assert_eq "custom-arch-llm" "$(tr -d '\n' <"$root/scaffold/ARCH-LLM.md")"
+  assert_eq "custom-understanding" "$(tr -d '\n' <"$root/scaffold/PROJECT-KNOWLEDGE.md")"
   assert_eq "node_modules/" "$(tr -d '\n' <"$root/.gitignore")"
 
   teardown_new_proj_env
@@ -114,10 +118,9 @@ test_custom_scaffold_dir_name() {
   export NEW_PROJ_SCAFFOLD_DIR_NAME="blueprint"
   run_new_proj "beta" >/dev/null
 
+  assert_file "$NEW_PROJ_BASE_DIR/beta/blueprint/ARCH-HUMAN.md"
   assert_file "$NEW_PROJ_BASE_DIR/beta/AGENTS.md"
-  assert_file "$NEW_PROJ_BASE_DIR/beta/blueprint/ARCHITECTURE.md"
-  assert_no_file "$NEW_PROJ_BASE_DIR/beta/blueprint/AGENTS.md"
-  assert_no_file "$NEW_PROJ_BASE_DIR/beta/docs/AGENTS.md"
+  assert_no_file "$NEW_PROJ_BASE_DIR/beta/blueprint/README.md"
 
   teardown_new_proj_env
 }
@@ -129,33 +132,34 @@ test_respects_config_env_scaffold_name() {
   unset NEW_PROJ_SCAFFOLD_DIR_NAME
   run_new_proj "gamma" >/dev/null
 
-  assert_file "$NEW_PROJ_BASE_DIR/gamma/notes/KNOWLEDGE.md"
-  assert_no_file "$NEW_PROJ_BASE_DIR/gamma/docs/KNOWLEDGE.md"
+  assert_file "$NEW_PROJ_BASE_DIR/gamma/notes/PROJECT-KNOWLEDGE.md"
+  assert_no_file "$NEW_PROJ_BASE_DIR/gamma/scaffold/PROJECT-KNOWLEDGE.md"
 
   teardown_new_proj_env
 }
 
-test_seeds_agents_template_when_missing() {
+test_seeds_scaffold_agent_template_when_missing() {
   setup_new_proj_env
   run_new_proj "delta" >/dev/null
 
-  assert_file "$NEW_PROJ_TEMPLATES_DIR/AGENTS.md"
-  local agents_template
-  agents_template="$(<"$NEW_PROJ_TEMPLATES_DIR/AGENTS.md")"
-  assert_contains "$agents_template" "Indentation: 2 spaces"
-  assert_contains "$agents_template" "docs/KNOWLEDGE.md"
+  assert_file "$NEW_PROJ_TEMPLATES_DIR/AGENT-WORKFLOW.md"
+  local workflow_template
+  workflow_template="$(<"$NEW_PROJ_TEMPLATES_DIR/AGENT-WORKFLOW.md")"
+  assert_contains "$workflow_template" "Indentation: 2 spaces"
+  assert_contains "$workflow_template" "scaffold/PROJECT-KNOWLEDGE.md"
 
-  local project_agents
-  project_agents="$(<"$NEW_PROJ_BASE_DIR/delta/AGENTS.md")"
-  assert_contains "$project_agents" "Indentation: 2 spaces"
+  local project_workflow
+  project_workflow="$(<"$NEW_PROJ_BASE_DIR/delta/scaffold/AGENT-WORKFLOW.md")"
+  assert_contains "$project_workflow" "Indentation: 2 spaces"
 
   teardown_new_proj_env
 }
 
 test_creates_default_gitignore_template_when_missing() {
   setup_new_proj_env
-  printf '%s\n' 'agent' >"$NEW_PROJ_TEMPLATES_DIR/AGENTS.md"
-  for f in README.md ARCHITECTURE.md KNOWLEDGE.md; do
+  printf '%s\n' 'agent-comms' >"$NEW_PROJ_TEMPLATES_DIR/AGENT-COMMS.md"
+  printf '%s\n' 'agent-workflow' >"$NEW_PROJ_TEMPLATES_DIR/AGENT-WORKFLOW.md"
+  for f in README.md ARCH-HUMAN.md ARCH-LLM.md PROJECT-KNOWLEDGE.md; do
     : >"$NEW_PROJ_TEMPLATES_DIR/$f"
   done
   run_new_proj "epsilon" >/dev/null
@@ -198,7 +202,7 @@ test_no_repo_skips_git() {
 
   assert_no_file "$NEW_PROJ_BASE_DIR/no-git-before/.git"
   assert_no_file "$NEW_PROJ_BASE_DIR/no-git-after/.git"
-  assert_file "$NEW_PROJ_BASE_DIR/no-git-before/AGENTS.md"
+  assert_file "$NEW_PROJ_BASE_DIR/no-git-before/scaffold/AGENT-WORKFLOW.md"
   assert_file "$NEW_PROJ_BASE_DIR/no-git-after/README.md"
 
   teardown_new_proj_env
@@ -211,7 +215,7 @@ test_prints_created_paths() {
   stderr="$(run_new_proj "eta" 2>&1 >/dev/null)"
   stdout="$(run_new_proj "eta-print" 2>/dev/null)"
   assert_contains "$stderr" "Created project: $NEW_PROJ_BASE_DIR/eta"
-  assert_contains "$stderr" "Scaffold folder: $NEW_PROJ_BASE_DIR/eta/docs"
+  assert_contains "$stderr" "Scaffold folder: $NEW_PROJ_BASE_DIR/eta/scaffold"
   assert_eq "cd $NEW_PROJ_BASE_DIR/eta-print" "$stdout"
   teardown_new_proj_env
 }
@@ -259,15 +263,15 @@ test_existing_does_not_emit_cd() {
   teardown_new_proj_env
 }
 
-test_existing_inserts_docs_and_agents() {
+test_existing_inserts_scaffold_and_agents() {
   setup_new_proj_env
   seed_standard_templates
   local root="$TEST_TMP/existing"
-  mkdir -p "$root/docs"
+  mkdir -p "$root/scaffold"
   printf '%s\n' 'keep-readme' >"$root/README.md"
   printf '%s\n' 'keep-ignore' >"$root/.gitignore"
-  printf '%s\n' 'legacy-deploy' >"$root/docs/DEPLOY.md"
-  printf '%s\n' 'legacy-todo' >"$root/docs/TODO.md"
+  printf '%s\n' 'legacy-deploy' >"$root/scaffold/DEPLOY.md"
+  printf '%s\n' 'legacy-todo' >"$root/scaffold/TODO.md"
   (
     cd "$root"
     run_new_proj --existing >/dev/null
@@ -275,13 +279,13 @@ test_existing_inserts_docs_and_agents() {
 
   assert_eq "keep-readme" "$(tr -d '\n' <"$root/README.md")"
   assert_eq "keep-ignore" "$(tr -d '\n' <"$root/.gitignore")"
-  assert_eq "custom-agent-rules" "$(tr -d '\n' <"$root/AGENTS.md")"
-  assert_eq "custom-arch" "$(tr -d '\n' <"$root/docs/ARCHITECTURE.md")"
-  assert_eq "custom-knowledge" "$(tr -d '\n' <"$root/docs/KNOWLEDGE.md")"
-  assert_eq "legacy-deploy" "$(tr -d '\n' <"$root/docs/DEPLOY.md")"
-  assert_eq "legacy-todo" "$(tr -d '\n' <"$root/docs/TODO.md")"
-  assert_file "$root/docs/skills"
-  assert_no_file "$root/docs/README.md"
+  assert_eq "custom-agent-comms" "$(tr -d '\n' <"$root/scaffold/AGENT-COMMS.md")"
+  assert_eq "custom-arch-human" "$(tr -d '\n' <"$root/scaffold/ARCH-HUMAN.md")"
+  assert_eq "custom-understanding" "$(tr -d '\n' <"$root/scaffold/PROJECT-KNOWLEDGE.md")"
+  assert_eq "legacy-deploy" "$(tr -d '\n' <"$root/scaffold/DEPLOY.md")"
+  assert_eq "legacy-todo" "$(tr -d '\n' <"$root/scaffold/TODO.md")"
+  assert_file "$root/scaffold/skills"
+  assert_no_file "$root/scaffold/README.md"
 
   teardown_new_proj_env
 }
@@ -297,7 +301,7 @@ test_existing_adds_readme_when_missing() {
   )
 
   assert_eq "custom-readme" "$(tr -d '\n' <"$root/README.md")"
-  assert_eq "custom-agent-rules" "$(tr -d '\n' <"$root/AGENTS.md")"
+  assert_eq "custom-agent-workflow" "$(tr -d '\n' <"$root/scaffold/AGENT-WORKFLOW.md")"
 
   teardown_new_proj_env
 }
@@ -322,7 +326,7 @@ test_existing_no_repo_skips_git() {
 
   assert_eq "before" "$(git -C "$root" log -1 --format=%s)" "no new commit from scaffold"
   assert_eq "1" "$(git -C "$root" rev-list --count HEAD)"
-  assert_file "$root/AGENTS.md"
+  assert_file "$root/scaffold/AGENT-WORKFLOW.md"
 
   teardown_new_proj_env
 }
@@ -343,7 +347,7 @@ test_existing_init_git_when_missing() {
 
   assert_true "$([[ -d "$root/.git" ]] && echo 1)" "git dir exists"
   assert_eq "init" "$(git -C "$root" log -1 --format=%s)"
-  assert_file "$root/AGENTS.md"
+  assert_file "$root/scaffold/AGENT-WORKFLOW.md"
 
   teardown_new_proj_env
 }
@@ -366,9 +370,9 @@ test_existing_commits_scaffold_when_git_exists() {
     run_new_proj --existing >/dev/null
   )
 
-  assert_eq "Add docs scaffold" "$(git -C "$root" log -1 --format=%s)"
+  assert_eq "Add scaffold" "$(git -C "$root" log -1 --format=%s)"
   assert_eq "2" "$(git -C "$root" rev-list --count HEAD)"
-  assert_file "$root/AGENTS.md"
+  assert_file "$root/scaffold/AGENT-WORKFLOW.md"
 
   teardown_new_proj_env
 }
@@ -507,8 +511,14 @@ test_shell_integration_agent_version_does_not_eval_stdout() {
   local root="$TEST_TMP/shell-agent-ver" checkout="$TEST_TMP/checkout-shell-ver"
   mkdir -p "$root" "$checkout"
   cp "$NEW_PROJ" "$checkout/new-proj"
-  cp "$ROOT/AGENTS.md" "$checkout/AGENTS.md"
-  cp "$ROOT/AGENTS.md" "$root/AGENTS.md"
+  cp "$ROOT/scaffold/AGENT-WORKFLOW.md" "$checkout/AGENT-WORKFLOW.md"
+  cp "$ROOT/scaffold/AGENT-COMMS.md" "$checkout/AGENT-COMMS.md"
+  mkdir -p "$checkout/scaffold"
+  cp "$ROOT/scaffold/AGENT-WORKFLOW.md" "$checkout/scaffold/AGENT-WORKFLOW.md"
+  cp "$ROOT/scaffold/AGENT-COMMS.md" "$checkout/scaffold/AGENT-COMMS.md"
+  mkdir -p "$root/scaffold"
+  cp "$ROOT/scaffold/AGENT-WORKFLOW.md" "$root/scaffold/AGENT-WORKFLOW.md"
+  cp "$ROOT/scaffold/AGENT-COMMS.md" "$root/scaffold/AGENT-COMMS.md"
   git -C "$root" init -q
   local out=0 combined
   combined="$(
@@ -520,8 +530,8 @@ test_shell_integration_agent_version_does_not_eval_stdout() {
     " 2>&1
   )" || out=$?
   assert_eq "0" "$out"
-  assert_contains "$combined" "project: AGENTS.md version: 1.2.0"
-  assert_contains "$combined" "latest: AGENTS.md version: 1.2.0"
+  assert_contains "$combined" "project: scaffold version: 2.1.0"
+  assert_contains "$combined" "latest: scaffold version: 2.1.0"
   if [[ "$combined" == *"command not found: project:"* ]]; then
     echo "FAIL: shell integration eval'd --agent-version stdout as shell commands"
     exit 1
@@ -539,8 +549,8 @@ test_existing_prints_insert_message() {
     cd "$root"
     run_new_proj --existing 2>&1 >/dev/null
   )"
-  assert_contains "$stderr" "Inserted docs scaffold into: $root"
-  assert_contains "$stderr" "Scaffold folder: $root/docs"
+  assert_contains "$stderr" "Inserted scaffold into: $root"
+  assert_contains "$stderr" "Scaffold folder: $root/scaffold"
   teardown_new_proj_env
 }
 
@@ -548,27 +558,32 @@ test_update_replaces_agents_and_adds_missing_scaffold() {
   setup_new_proj_env
   seed_standard_templates
   local root="$TEST_TMP/update" checkout="$TEST_TMP/checkout"
-  mkdir -p "$root/docs" "$checkout"
+  mkdir -p "$root/scaffold" "$checkout/scaffold"
   cp "$NEW_PROJ" "$checkout/new-proj"
-  printf '%s\n' 'fresh-from-repo' >"$checkout/AGENTS.md"
-  printf '%s\n' 'stale-agent-rules' >"$root/AGENTS.md"
-  printf '%s\n' 'my-architecture' >"$root/docs/ARCHITECTURE.md"
-  printf '%s\n' 'my-knowledge' >"$root/docs/KNOWLEDGE.md"
-  printf '%s\n' 'legacy-deploy' >"$root/docs/DEPLOY.md"
+  printf '%s\n' 'fresh-comms' >"$checkout/scaffold/AGENT-COMMS.md"
+  printf '%s\n' 'fresh-from-repo' >"$checkout/scaffold/AGENT-WORKFLOW.md"
+  printf '%s\n' 'scaffold version: 9.9.9' >>"$checkout/scaffold/AGENT-WORKFLOW.md"
+  printf '%s\n' 'stale-agent-workflow' >"$root/scaffold/AGENT-WORKFLOW.md"
+  printf '%s\n' 'stale-agent-comms' >"$root/scaffold/AGENT-COMMS.md"
+  printf '%s\n' 'my-arch-human' >"$root/scaffold/ARCH-HUMAN.md"
+  printf '%s\n' 'my-understanding' >"$root/scaffold/PROJECT-KNOWLEDGE.md"
+  printf '%s\n' 'legacy-deploy' >"$root/scaffold/DEPLOY.md"
   git -C "$root" init -q
   local stderr
   stderr="$(
     cd "$root"
     "$checkout/new-proj" --update 2>&1 >/dev/null
   )"
+  assert_contains "$stderr" "Updated scaffold agent files"
   assert_contains "$stderr" "Updated AGENTS.md"
   assert_contains "$stderr" "Updated scaffold in: $(cd "$root" && pwd -P)"
-  assert_contains "$(<"$root/AGENTS.md")" "fresh-from-repo"
-  assert_eq "my-architecture" "$(tr -d '\n' <"$root/docs/ARCHITECTURE.md")"
-  assert_eq "my-knowledge" "$(tr -d '\n' <"$root/docs/KNOWLEDGE.md")"
-  assert_eq "legacy-deploy" "$(tr -d '\n' <"$root/docs/DEPLOY.md")"
+  assert_contains "$(<"$root/scaffold/AGENT-WORKFLOW.md")" "fresh-from-repo"
+  assert_eq "custom-agents-pointer" "$(tr -d '\n' <"$root/AGENTS.md")"
+  assert_eq "my-arch-human" "$(tr -d '\n' <"$root/scaffold/ARCH-HUMAN.md")"
+  assert_eq "my-understanding" "$(tr -d '\n' <"$root/scaffold/PROJECT-KNOWLEDGE.md")"
+  assert_eq "legacy-deploy" "$(tr -d '\n' <"$root/scaffold/DEPLOY.md")"
   assert_eq "template-sz-marker" "$(tr -d '\n' <"$root/scripts/sz.py")"
-  assert_file "$root/docs/skills"
+  assert_file "$root/scaffold/skills"
   teardown_new_proj_env
 }
 
@@ -576,10 +591,11 @@ test_update_from_subfolder_updates_repo_root() {
   setup_new_proj_env
   seed_standard_templates
   local root="$TEST_TMP/update-sub" checkout="$TEST_TMP/checkout-sub"
-  mkdir -p "$root/src" "$checkout"
+  mkdir -p "$root/src" "$root/scaffold" "$checkout/scaffold"
   cp "$NEW_PROJ" "$checkout/new-proj"
-  printf '%s\n' 'fresh-from-repo' >"$checkout/AGENTS.md"
-  printf '%s\n' 'stale-agent-rules' >"$root/AGENTS.md"
+  printf '%s\n' 'fresh-from-repo' >"$checkout/scaffold/AGENT-WORKFLOW.md"
+  printf '%s\n' 'fresh-comms' >"$checkout/scaffold/AGENT-COMMS.md"
+  printf '%s\n' 'stale-agent-workflow' >"$root/scaffold/AGENT-WORKFLOW.md"
   git -C "$root" init -q
   local stderr
   stderr="$(
@@ -587,29 +603,30 @@ test_update_from_subfolder_updates_repo_root() {
     "$checkout/new-proj" --update 2>&1 >/dev/null
   )"
   assert_contains "$stderr" "Updated scaffold in: $(cd "$root" && pwd -P)"
-  assert_contains "$(<"$root/AGENTS.md")" "fresh-from-repo"
-  assert_no_file "$root/src/AGENTS.md"
+  assert_contains "$(<"$root/scaffold/AGENT-WORKFLOW.md")" "fresh-from-repo"
+  assert_no_file "$root/src/scaffold/AGENT-WORKFLOW.md"
   assert_file "$root/scripts/sz.py"
   teardown_new_proj_env
 }
 
-test_update_no_git_walks_up_to_agents_md() {
+test_update_no_git_walks_up_to_scaffold_workflow() {
   setup_new_proj_env
   seed_standard_templates
   local root="$TEST_TMP/update-walk" bin_only="$TEST_TMP/bin-only-walk"
   export HOME="$TEST_TMP/home"
-  mkdir -p "$root/src" "$bin_only" "$HOME/.config/new-proj/bundled"
+  mkdir -p "$root/src" "$root/scaffold" "$bin_only" "$HOME/.config/new-proj/bundled"
   cp "$NEW_PROJ" "$bin_only/new-proj"
-  printf '%s\n' 'stale-agent-rules' >"$root/AGENTS.md"
-  printf '%s\n' 'bundled-agents' >"$HOME/.config/new-proj/bundled/AGENTS.md"
+  printf '%s\n' 'stale-agent-workflow' >"$root/scaffold/AGENT-WORKFLOW.md"
+  printf '%s\n' 'bundled-workflow' >"$HOME/.config/new-proj/bundled/AGENT-WORKFLOW.md"
+  printf '%s\n' 'bundled-comms' >"$HOME/.config/new-proj/bundled/AGENT-COMMS.md"
   local stderr
   stderr="$(
     cd "$root/src"
     "$bin_only/new-proj" --update 2>&1 >/dev/null
   )"
   assert_contains "$stderr" "Updated scaffold in: $(cd "$root" && pwd -P)"
-  assert_eq "bundled-agents" "$(tr -d '\n' <"$root/AGENTS.md")"
-  assert_no_file "$root/src/AGENTS.md"
+  assert_eq "bundled-workflow" "$(tr -d '\n' <"$root/scaffold/AGENT-WORKFLOW.md")"
+  assert_no_file "$root/src/scaffold/AGENT-WORKFLOW.md"
   teardown_new_proj_env
 }
 
@@ -624,7 +641,7 @@ test_update_errors_without_project_root() {
   )" || out=$?
   assert_eq "1" "$out"
   assert_contains "$stderr" "could not find project root"
-  assert_no_file "$root/src/AGENTS.md"
+  assert_no_file "$root/src/scaffold/AGENT-WORKFLOW.md"
   teardown_new_proj_env
 }
 
@@ -633,10 +650,11 @@ test_update_uses_bundled_when_not_in_checkout() {
   seed_standard_templates
   local root="$TEST_TMP/bundled-update" bin_only="$TEST_TMP/bin-only"
   export HOME="$TEST_TMP/home"
-  mkdir -p "$root" "$bin_only" "$HOME/.config/new-proj/bundled"
+  mkdir -p "$root/scaffold" "$bin_only" "$HOME/.config/new-proj/bundled"
   cp "$NEW_PROJ" "$bin_only/new-proj"
-  printf '%s\n' 'stale-agent-rules' >"$root/AGENTS.md"
-  printf '%s\n' 'bundled-agents' >"$HOME/.config/new-proj/bundled/AGENTS.md"
+  printf '%s\n' 'stale-agent-workflow' >"$root/scaffold/AGENT-WORKFLOW.md"
+  printf '%s\n' 'bundled-workflow' >"$HOME/.config/new-proj/bundled/AGENT-WORKFLOW.md"
+  printf '%s\n' 'bundled-comms' >"$HOME/.config/new-proj/bundled/AGENT-COMMS.md"
   git -C "$root" init -q
   local stderr
   stderr="$(
@@ -644,7 +662,7 @@ test_update_uses_bundled_when_not_in_checkout() {
     "$bin_only/new-proj" --update 2>&1 >/dev/null
   )"
   assert_contains "$stderr" "Updated scaffold in: $(cd "$root" && pwd -P)"
-  assert_eq "bundled-agents" "$(tr -d '\n' <"$root/AGENTS.md")"
+  assert_eq "bundled-workflow" "$(tr -d '\n' <"$root/scaffold/AGENT-WORKFLOW.md")"
   teardown_new_proj_env
 }
 
@@ -652,8 +670,9 @@ test_update_skips_existing_scripts() {
   setup_new_proj_env
   seed_standard_templates
   local root="$TEST_TMP/update-skip-script"
-  mkdir -p "$root/scripts"
-  printf '%s\n' 'stale-agent-rules' >"$root/AGENTS.md"
+  mkdir -p "$root/scripts" "$root/scaffold"
+  printf '%s\n' 'stale-agent-workflow' >"$root/scaffold/AGENT-WORKFLOW.md"
+  printf '%s\n' 'stale-agent-comms' >"$root/scaffold/AGENT-COMMS.md"
   printf '%s\n' 'custom-sz' >"$root/scripts/sz.py"
   git -C "$root" init -q
   (
@@ -718,10 +737,10 @@ test_install_syncs_sz_template() {
 test_agent_version_shows_current_when_up_to_date() {
   setup_new_proj_env
   local root="$TEST_TMP/agent-ver-current" checkout="$TEST_TMP/checkout-ver"
-  mkdir -p "$root" "$checkout"
+  mkdir -p "$root/scaffold" "$checkout/scaffold"
   cp "$NEW_PROJ" "$checkout/new-proj"
-  printf '%s\n' 'AGENTS.md version: 3.0.0' >"$checkout/AGENTS.md"
-  printf '%s\n' 'AGENTS.md version: 3.0.0' >"$root/AGENTS.md"
+  printf '%s\n' 'scaffold version: 3.0.0' >"$checkout/scaffold/AGENT-WORKFLOW.md"
+  printf '%s\n' 'scaffold version: 3.0.0' >"$root/scaffold/AGENT-WORKFLOW.md"
   git -C "$root" init -q
   local out=0 stdout
   stdout="$(
@@ -730,18 +749,18 @@ test_agent_version_shows_current_when_up_to_date() {
   )"
   out=$?
   assert_eq "0" "$out"
-  assert_contains "$stdout" "project: AGENTS.md version: 3.0.0"
-  assert_contains "$stdout" "latest: AGENTS.md version: 3.0.0"
+  assert_contains "$stdout" "project: scaffold version: 3.0.0"
+  assert_contains "$stdout" "latest: scaffold version: 3.0.0"
   teardown_new_proj_env
 }
 
 test_agent_version_shows_stale_and_exits_nonzero() {
   setup_new_proj_env
   local root="$TEST_TMP/agent-ver-stale" checkout="$TEST_TMP/checkout-ver-stale"
-  mkdir -p "$root" "$checkout"
+  mkdir -p "$root/scaffold" "$checkout/scaffold"
   cp "$NEW_PROJ" "$checkout/new-proj"
-  printf '%s\n' 'AGENTS.md version: 2.0.0' >"$checkout/AGENTS.md"
-  printf '%s\n' 'AGENTS.md version: 1.0.0' >"$root/AGENTS.md"
+  printf '%s\n' 'scaffold version: 2.1.0' >"$checkout/scaffold/AGENT-WORKFLOW.md"
+  printf '%s\n' 'scaffold version: 1.0.0' >"$root/scaffold/AGENT-WORKFLOW.md"
   git -C "$root" init -q
   local out=0 stdout
   stdout="$(
@@ -749,18 +768,19 @@ test_agent_version_shows_stale_and_exits_nonzero() {
     "$checkout/new-proj" --agent-version 2>&1
   )" || out=$?
   assert_eq "1" "$out"
-  assert_contains "$stdout" "project: AGENTS.md version: 1.0.0"
-  assert_contains "$stdout" "latest: AGENTS.md version: 2.0.0"
+  assert_contains "$stdout" "project: scaffold version: 1.0.0"
+  assert_contains "$stdout" "latest: scaffold version: 2.1.0"
   teardown_new_proj_env
 }
 
 test_agent_version_reports_missing_version_line() {
   setup_new_proj_env
   local root="$TEST_TMP/agent-ver-none" checkout="$TEST_TMP/checkout-ver-none"
-  mkdir -p "$root" "$checkout"
+  mkdir -p "$root/scaffold" "$checkout/scaffold"
   cp "$NEW_PROJ" "$checkout/new-proj"
-  cp "$ROOT/AGENTS.md" "$checkout/AGENTS.md"
-  printf '%s\n' 'legacy-agent-rules' >"$root/AGENTS.md"
+  cp "$ROOT/scaffold/AGENT-WORKFLOW.md" "$checkout/scaffold/AGENT-WORKFLOW.md"
+  cp "$ROOT/scaffold/AGENT-COMMS.md" "$checkout/scaffold/AGENT-COMMS.md"
+  printf '%s\n' 'legacy-agent-workflow' >"$root/scaffold/AGENT-WORKFLOW.md"
   git -C "$root" init -q
   local out=0 stdout
   stdout="$(
@@ -768,8 +788,8 @@ test_agent_version_reports_missing_version_line() {
     "$checkout/new-proj" --agent-version 2>&1
   )" || out=$?
   assert_eq "1" "$out"
-  assert_contains "$stdout" "project: (no version — last line: legacy-agent-rules)"
-  assert_contains "$stdout" "latest: AGENTS.md version: 1.2.0"
+  assert_contains "$stdout" "project: (no version — last line: legacy-agent-workflow)"
+  assert_contains "$stdout" "latest: scaffold version: 2.1.0"
   teardown_new_proj_env
 }
 
@@ -778,8 +798,14 @@ test_agent_version_from_subfolder() {
   local root="$TEST_TMP/agent-ver-sub" checkout="$TEST_TMP/checkout-ver-sub"
   mkdir -p "$root/src" "$checkout"
   cp "$NEW_PROJ" "$checkout/new-proj"
-  cp "$ROOT/AGENTS.md" "$checkout/AGENTS.md"
-  cp "$ROOT/AGENTS.md" "$root/AGENTS.md"
+  cp "$ROOT/scaffold/AGENT-WORKFLOW.md" "$checkout/AGENT-WORKFLOW.md"
+  cp "$ROOT/scaffold/AGENT-COMMS.md" "$checkout/AGENT-COMMS.md"
+  mkdir -p "$checkout/scaffold"
+  cp "$ROOT/scaffold/AGENT-WORKFLOW.md" "$checkout/scaffold/AGENT-WORKFLOW.md"
+  cp "$ROOT/scaffold/AGENT-COMMS.md" "$checkout/scaffold/AGENT-COMMS.md"
+  mkdir -p "$root/scaffold"
+  cp "$ROOT/scaffold/AGENT-WORKFLOW.md" "$root/scaffold/AGENT-WORKFLOW.md"
+  cp "$ROOT/scaffold/AGENT-COMMS.md" "$root/scaffold/AGENT-COMMS.md"
   git -C "$root" init -q
   local out=0 stdout
   stdout="$(
@@ -788,8 +814,8 @@ test_agent_version_from_subfolder() {
   )"
   out=$?
   assert_eq "0" "$out"
-  assert_contains "$stdout" "project: AGENTS.md version: 1.2.0"
-  assert_contains "$stdout" "latest: AGENTS.md version: 1.2.0"
+  assert_contains "$stdout" "project: scaffold version: 2.1.0"
+  assert_contains "$stdout" "latest: scaffold version: 2.1.0"
   teardown_new_proj_env
 }
 
@@ -801,13 +827,13 @@ test_agent_version_rejects_combined_flags() {
   teardown_new_proj_env
 }
 
-test_install_refreshes_bundled_agents() {
+test_install_refreshes_bundled_scaffold_agents() {
   setup_install_home
   mkdir -p "$HOME/.config/new-proj/bundled"
-  printf '%s\n' 'old-bundled' >"$HOME/.config/new-proj/bundled/AGENTS.md"
+  printf '%s\n' 'old-bundled' >"$HOME/.config/new-proj/bundled/AGENT-WORKFLOW.md"
   "$INSTALL_SH" >/dev/null
   local bundled
-  bundled="$(<"$HOME/.config/new-proj/bundled/AGENTS.md")"
+  bundled="$(<"$HOME/.config/new-proj/bundled/AGENT-WORKFLOW.md")"
   assert_contains "$bundled" "Indentation: 2 spaces"
   assert_contains "$bundled" "Create commits without being asked"
   teardown_install_home
@@ -863,31 +889,34 @@ test_install_creates_config_and_templates_when_missing() {
   setup_install_home
   "$INSTALL_SH" >/dev/null
   assert_file "$HOME/.config/new-proj/config.env"
+  assert_file "$HOME/.config/new-proj/templates/AGENT-WORKFLOW.md"
+  assert_file "$HOME/.config/new-proj/templates/AGENT-COMMS.md"
   assert_file "$HOME/.config/new-proj/templates/AGENTS.md"
   assert_file "$HOME/.config/new-proj/templates/README.md"
   assert_file "$HOME/.config/new-proj/templates/.gitignore"
-  local agents
-  agents="$(<"$HOME/.config/new-proj/templates/AGENTS.md")"
-  assert_contains "$agents" "Indentation: 2 spaces"
-  assert_contains "$agents" "docs/KNOWLEDGE.md"
+  local workflow
+  workflow="$(<"$HOME/.config/new-proj/templates/AGENT-WORKFLOW.md")"
+  assert_contains "$workflow" "Indentation: 2 spaces"
+  assert_contains "$workflow" "scaffold/PROJECT-KNOWLEDGE.md"
   teardown_install_home
 }
 
 test_install_refreshes_templates_on_every_run() {
   setup_install_home
   mkdir -p "$HOME/.config/new-proj/templates"
-  printf '%s\n' 'SCAFFOLD_DIR_NAME="docs"' >"$HOME/.config/new-proj/config.env"
-  printf '%s\n' 'STALE_AGENTS' >"$HOME/.config/new-proj/templates/AGENTS.md"
+  printf '%s\n' 'SCAFFOLD_DIR_NAME="scaffold"' >"$HOME/.config/new-proj/config.env"
+  printf '%s\n' 'STALE_WORKFLOW' >"$HOME/.config/new-proj/templates/AGENT-WORKFLOW.md"
   printf '%s\n' 'STALE_README' >"$HOME/.config/new-proj/templates/README.md"
   "$INSTALL_SH" >/dev/null
-  local agents readme knowledge
-  agents="$(<"$HOME/.config/new-proj/templates/AGENTS.md")"
+  local workflow readme understanding
+  workflow="$(<"$HOME/.config/new-proj/templates/AGENT-WORKFLOW.md")"
   readme="$(<"$HOME/.config/new-proj/templates/README.md")"
-  knowledge="$(<"$HOME/.config/new-proj/templates/KNOWLEDGE.md")"
-  assert_contains "$agents" "AGENTS.md version: 1.2.0"
-  assert_contains "$agents" "docs/KNOWLEDGE.md"
+  understanding="$(<"$HOME/.config/new-proj/templates/PROJECT-KNOWLEDGE.md")"
+  assert_contains "$workflow" "scaffold version: 2.1.0"
+  assert_contains "$workflow" "scaffold/PROJECT-KNOWLEDGE.md"
+  assert_contains "$workflow" "One home per fact"
   assert_contains "$readme" "Brief description"
-  assert_contains "$knowledge" "Hard-won lessons"
+  assert_contains "$understanding" "Hard-won lessons"
   teardown_install_home
 }
 
@@ -902,32 +931,34 @@ test_install_removes_deprecated_template_files() {
   teardown_install_home
 }
 
-test_install_does_not_modify_repo_docs() {
-  local arch_file="$ROOT/docs/ARCHITECTURE.md"
+test_install_does_not_modify_repo_scaffold() {
+  local arch_file="$ROOT/scaffold/ARCH-LLM.md"
   local before after
   before="$(shasum -a 256 "$arch_file" | awk '{print $1}')"
   setup_install_home
   "$INSTALL_SH" >/dev/null
   after="$(shasum -a 256 "$arch_file" | awk '{print $1}')"
-  assert_eq "$before" "$after" "repo docs/ARCHITECTURE.md changed after install"
+  assert_eq "$before" "$after" "repo scaffold/ARCH-LLM.md changed after install"
   teardown_install_home
 }
 
-test_existing_preserves_agents_and_knowledge_when_present() {
+test_existing_preserves_agents_and_understanding_when_present() {
   setup_new_proj_env
   seed_standard_templates
   local root="$TEST_TMP/existing-keep"
-  mkdir -p "$root/docs"
-  printf '%s\n' 'keep-agents' >"$root/AGENTS.md"
-  printf '%s\n' 'keep-knowledge' >"$root/docs/KNOWLEDGE.md"
+  mkdir -p "$root/scaffold"
+  printf '%s\n' 'keep-comms' >"$root/scaffold/AGENT-COMMS.md"
+  printf '%s\n' 'keep-workflow' >"$root/scaffold/AGENT-WORKFLOW.md"
+  printf '%s\n' 'keep-understanding' >"$root/scaffold/PROJECT-KNOWLEDGE.md"
   (
     cd "$root"
     run_new_proj --existing >/dev/null
   )
-  assert_eq "keep-agents" "$(tr -d '\n' <"$root/AGENTS.md")"
-  assert_eq "keep-knowledge" "$(tr -d '\n' <"$root/docs/KNOWLEDGE.md")"
-  assert_eq "custom-arch" "$(tr -d '\n' <"$root/docs/ARCHITECTURE.md")"
-  assert_file "$root/docs/skills"
+  assert_eq "keep-comms" "$(tr -d '\n' <"$root/scaffold/AGENT-COMMS.md")"
+  assert_eq "keep-workflow" "$(tr -d '\n' <"$root/scaffold/AGENT-WORKFLOW.md")"
+  assert_eq "keep-understanding" "$(tr -d '\n' <"$root/scaffold/PROJECT-KNOWLEDGE.md")"
+  assert_eq "custom-arch-human" "$(tr -d '\n' <"$root/scaffold/ARCH-HUMAN.md")"
+  assert_file "$root/scaffold/skills"
   teardown_new_proj_env
 }
 
@@ -946,7 +977,7 @@ main() {
     test_creates_scaffold_and_root_readme
     test_custom_scaffold_dir_name
     test_respects_config_env_scaffold_name
-    test_seeds_agents_template_when_missing
+    test_seeds_scaffold_agent_template_when_missing
     test_creates_default_gitignore_template_when_missing
     test_git_init_when_git_available
     test_no_repo_skips_git
@@ -954,7 +985,7 @@ main() {
     test_cds_into_new_project
     test_no_repo_cds_into_new_project
     test_existing_does_not_emit_cd
-    test_existing_inserts_docs_and_agents
+    test_existing_inserts_scaffold_and_agents
     test_existing_adds_readme_when_missing
     test_existing_no_repo_skips_git
     test_existing_init_git_when_missing
@@ -968,7 +999,7 @@ main() {
     test_existing_prints_insert_message
     test_update_replaces_agents_and_adds_missing_scaffold
     test_update_from_subfolder_updates_repo_root
-    test_update_no_git_walks_up_to_agents_md
+    test_update_no_git_walks_up_to_scaffold_workflow
     test_update_errors_without_project_root
     test_update_uses_bundled_when_not_in_checkout
     test_update_skips_existing_scripts
@@ -982,7 +1013,7 @@ main() {
     test_agent_version_reports_missing_version_line
     test_agent_version_from_subfolder
     test_agent_version_rejects_combined_flags
-    test_install_refreshes_bundled_agents
+    test_install_refreshes_bundled_scaffold_agents
     test_install_copies_new_proj_binary
     test_install_adds_shell_integration_to_zshrc
     test_shell_integration_loads_in_zsh
@@ -991,8 +1022,8 @@ main() {
     test_install_creates_config_and_templates_when_missing
     test_install_refreshes_templates_on_every_run
     test_install_removes_deprecated_template_files
-    test_existing_preserves_agents_and_knowledge_when_present
-    test_install_does_not_modify_repo_docs
+    test_existing_preserves_agents_and_understanding_when_present
+    test_install_does_not_modify_repo_scaffold
   )
 
   for t in "${tests[@]}"; do

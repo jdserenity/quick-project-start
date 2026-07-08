@@ -117,14 +117,17 @@ EOF
   export NEW_PROJ_TEMPLATES_DIR="$TEST_TMP/templates"
   export NEW_PROJ_CONFIG_FILE="$TEST_TMP/config.env"
   mkdir -p "$NEW_PROJ_BASE_DIR" "$NEW_PROJ_TEMPLATES_DIR"
-  printf '%s\n' 'SCAFFOLD_DIR_NAME="docs"' >"$NEW_PROJ_CONFIG_FILE"
+  printf '%s\n' 'SCAFFOLD_DIR_NAME="scaffold"' >"$NEW_PROJ_CONFIG_FILE"
 }
 
 seed_standard_templates() {
-  printf '%s\n' 'custom-agent-rules' >"$NEW_PROJ_TEMPLATES_DIR/AGENTS.md"
+  printf '%s\n' 'custom-agent-comms' >"$NEW_PROJ_TEMPLATES_DIR/AGENT-COMMS.md"
+  printf '%s\n' 'custom-agent-workflow' >"$NEW_PROJ_TEMPLATES_DIR/AGENT-WORKFLOW.md"
+  printf '%s\n' 'custom-agents-pointer' >"$NEW_PROJ_TEMPLATES_DIR/AGENTS.md"
   printf '%s\n' 'custom-readme' >"$NEW_PROJ_TEMPLATES_DIR/README.md"
-  printf '%s\n' 'custom-arch' >"$NEW_PROJ_TEMPLATES_DIR/ARCHITECTURE.md"
-  printf '%s\n' 'custom-knowledge' >"$NEW_PROJ_TEMPLATES_DIR/KNOWLEDGE.md"
+  printf '%s\n' 'custom-arch-human' >"$NEW_PROJ_TEMPLATES_DIR/ARCH-HUMAN.md"
+  printf '%s\n' 'custom-arch-llm' >"$NEW_PROJ_TEMPLATES_DIR/ARCH-LLM.md"
+  printf '%s\n' 'custom-understanding' >"$NEW_PROJ_TEMPLATES_DIR/PROJECT-KNOWLEDGE.md"
   printf '%s\n' 'node_modules/' >"$NEW_PROJ_TEMPLATES_DIR/.gitignore"
   printf '%s\n' 'template-sz-marker' >"$NEW_PROJ_TEMPLATES_DIR/sz.py"
 }
