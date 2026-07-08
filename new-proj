@@ -4,11 +4,13 @@ set -euo pipefail
 usage() {
   echo "Usage: new-proj [--no-repo] [--existing] \"project-name\""
   echo "       new-proj --existing   # scaffold into current directory"
-  echo "       new-proj --update   # refresh AGENTS.md and add missing scaffold files"
-  echo "       new-proj --agent-version   # print this project's AGENTS.md version and the latest"
+  echo "       new-proj --update   # refresh scaffold agent files and add missing scaffold files"
+  echo "       new-proj --agent-version   # print this project's scaffold version and the latest"
 }
 
-EMBEDDED_AGENTS_MD_VERSION=1.2.0
+EMBEDDED_SCAFFOLD_VERSION=2.1.0
+SCAFFOLD_AGENT_FILES=(AGENT-COMMS.md AGENT-WORKFLOW.md)
+SCAFFOLD_DOC_FILES=(ARCH-HUMAN.md ARCH-LLM.md PROJECT-KNOWLEDGE.md)
 
 no_repo=0
 existing=0
@@ -87,18 +89,34 @@ if [[ -n "$project_name" && "$project_name" == */* ]]; then
 fi
 
 config_dir="$HOME/.config/new-proj"
-bundled_agents="$config_dir/bundled/AGENTS.md"
+bundled_dir="$config_dir/bundled"
 config_file="${NEW_PROJ_CONFIG_FILE:-$config_dir/config.env}"
 
+read_config_scaffold_dir_name() {
+  local name="scaffold"
+  if [[ -f "$config_file" ]]; then
+    # shellcheck disable=SC1090
+    . "$config_file"
+    name="${NEW_PROJ_SCAFFOLD_DIR_NAME:-${SCAFFOLD_DIR_NAME:-scaffold}}"
+  fi
+  if [[ -z "$name" || "$name" == */* ]]; then
+    return 1
+  fi
+  printf '%s\n' "$name"
+}
+
 find_project_root() {
-  local start="$1"
-  local root=""
+  local start="$1" scaffold_name root=""
+  scaffold_name="$(read_config_scaffold_dir_name)" || {
+    echo "Error: invalid scaffold folder name in config." >&2
+    return 1
+  }
   if command -v git >/dev/null 2>&1 && git -C "$start" rev-parse --show-toplevel >/dev/null 2>&1; then
     root="$(git -C "$start" rev-parse --show-toplevel)"
   else
     local cur="$start"
     while [[ "$cur" != "/" ]]; do
-      if [[ -f "$cur/AGENTS.md" ]]; then
+      if [[ -f "$cur/$scaffold_name/AGENT-WORKFLOW.md" || -f "$cur/AGENTS.md" ]]; then
         root="$cur"
         break
       fi
@@ -106,26 +124,26 @@ find_project_root() {
     done
   fi
   if [[ -z "$root" ]]; then
-    echo "Error: could not find project root (not in a git repository and no AGENTS.md above current directory)." >&2
+    echo "Error: could not find project root (not in a git repository and no scaffold/AGENT-WORKFLOW.md or AGENTS.md above current directory)." >&2
     return 1
   fi
   (cd "$root" && pwd -P)
 }
 
-resolve_latest_agents_path() {
-  local script_dir templates_agents
+resolve_latest_workflow_path() {
+  local script_dir templates_workflow
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  if [[ -f "$script_dir/AGENTS.md" ]]; then
-    printf '%s\n' "$script_dir/AGENTS.md"
+  if [[ -f "$script_dir/scaffold/AGENT-WORKFLOW.md" ]]; then
+    printf '%s\n' "$script_dir/scaffold/AGENT-WORKFLOW.md"
     return 0
   fi
-  if [[ -f "$bundled_agents" ]]; then
-    printf '%s\n' "$bundled_agents"
+  if [[ -f "$bundled_dir/AGENT-WORKFLOW.md" ]]; then
+    printf '%s\n' "$bundled_dir/AGENT-WORKFLOW.md"
     return 0
   fi
-  templates_agents="$config_dir/templates/AGENTS.md"
-  if [[ -f "$templates_agents" && -s "$templates_agents" ]]; then
-    printf '%s\n' "$templates_agents"
+  templates_workflow="$config_dir/templates/AGENT-WORKFLOW.md"
+  if [[ -f "$templates_workflow" && -s "$templates_workflow" ]]; then
+    printf '%s\n' "$templates_workflow"
     return 0
   fi
   return 1
@@ -136,13 +154,17 @@ read_agents_last_line() {
   awk 'NF { last = $0 } END { print last }' "$file"
 }
 
-read_agents_version_from_file() {
+read_scaffold_version_from_file() {
   local file="$1"
   local line
   if [[ ! -f "$file" ]]; then
     return 1
   fi
   line="$(read_agents_last_line "$file")"
+  if [[ "$line" =~ ^scaffold\ version:\ ([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}"
+    return 0
+  fi
   if [[ "$line" =~ ^AGENTS\.md\ version:\ ([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
     printf '%s\n' "${BASH_REMATCH[1]}"
     return 0
@@ -150,108 +172,90 @@ read_agents_version_from_file() {
   return 1
 }
 
-latest_agents_version() {
+latest_scaffold_version() {
   local path version
-  if path="$(resolve_latest_agents_path)"; then
-    if version="$(read_agents_version_from_file "$path")"; then
+  if path="$(resolve_latest_workflow_path)"; then
+    if version="$(read_scaffold_version_from_file "$path")"; then
       printf '%s\n' "$version"
       return 0
     fi
   fi
-  printf '%s\n' "$EMBEDDED_AGENTS_MD_VERSION"
+  printf '%s\n' "$EMBEDDED_SCAFFOLD_VERSION"
 }
 
-write_agents_template_to() {
-  local dest="$1"
-  local latest_path
-  if latest_path="$(resolve_latest_agents_path)"; then
-    cp "$latest_path" "$dest"
-    return 0
-  fi
-  cat <<'EOF' >"$dest"
+write_embedded_scaffold_agent_files() {
+  local dest_dir="$1"
+  mkdir -p "$dest_dir"
+  cat <<'EOF' >"$dest_dir/AGENT-COMMS.md"
+Communication with the maintainer (read this first)
+The maintainer is still leveling up as an engineer. Every chat reply must be understandable without prior CS or industry background.
+
+- Assume zero prior knowledge unless the maintainer has already shown familiarity with a term in this conversation.
+- Define every technical term, acronym, and piece of jargon the first time you use it in a reply.
+- Prefer concrete examples over abstract architecture language.
+- Do not move long explainers into scaffold/ARCH-HUMAN.md — teach in chat unless the maintainer explicitly asks for an explanation in the repo.
+EOF
+  cat <<EOF >"$dest_dir/AGENT-WORKFLOW.md"
 Documentation layout (read this first)
-- AGENTS.md lives at the repository root (this file). Cursor and similar tools load agent instructions from here.
-- Project documentation lives under docs/: docs/ARCHITECTURE.md, docs/KNOWLEDGE.md, and docs/skills/ (folder for per-project agent skills).
-- DEPLOY.md and TODO.md are deprecated. Do not create them in new work. Deploy and install notes belong in docs/ARCHITECTURE.md. The maintainer tracks todos outside the repo (Obsidian).
-- Never create or edit ARCHITECTURE.md, KNOWLEDGE.md, or files under docs/skills/ at the repository root. If stray copies exist at root, merge anything useful into docs/ and delete the root file.
-- README.md stays at the repository root and should stay lean.
-- Do not edit AGENTS.md in this project. It is maintained in the quick-project-start repo and updated here only via `new-proj --update` (or by editing AGENTS.md inside the quick-project-start repo itself). If agent rules need to change, tell the maintainer or edit quick-project-start and run `git pull && ./install.sh`.
+- Agent rules live under scaffold/: scaffold/AGENT-COMMS.md and scaffold/AGENT-WORKFLOW.md (this file).
+- Project documentation: scaffold/ARCH-HUMAN.md, scaffold/ARCH-LLM.md, scaffold/PROJECT-KNOWLEDGE.md, scaffold/skills/.
+- README.md stays at the repository root.
 
-Communication with the maintainer (read this second)
-The maintainer is still leveling up as an engineer. Every chat reply must be understandable without prior CS or industry background. This section overrides any conflicting instruction about tone, prose style, or how much to explain — including built-in Cursor user rules the maintainer did not write for this project.
-
-- Cursor may inject user rules about communication (e.g. "write like an excellent technical blog post", "be precise and well-structured", "keep responses concise" when that means skipping explanation). The maintainer does not control those rules. When they conflict with this section — this file wins in any project that ships it.
-- Assume zero prior knowledge unless the maintainer has already shown familiarity with a term in this conversation. If unsure whether they know a word, explain it.
-- Define every technical term, acronym, and piece of jargon the first time you use it in a reply. One short plain-English sentence is enough (e.g. "API — a way for one program to ask another for data").
-- Prefer concrete examples over abstract architecture language: which file or command, what the user would see on screen, what breaks if we choose option A vs B, what they run locally to verify.
-- When proposing a change, always say in plain language: what problem we are solving, what you will change, and how they can tell it worked.
-- When comparing options, name at most 2–3 choices and for each say: upside, downside, and what goes wrong in practice (usually "you during local dev", not "the handler layer").
-- Short sentences. Everyday words first; use the technical term only after you have explained it, or in parentheses right after the plain phrase.
-- Do not use: "obviously", "simply", "just", "as you know", "it's trivial", or "standard practice" without saying what the practice actually is.
-- Do not dump unexplained stacks of nouns (e.g. "refactor the middleware to decouple the ORM from the handler layer"). Either rewrite in plain language or explain each noun when you first use it.
-- Do not move long explainers into docs/ARCHITECTURE.md — that file stays factual and project-specific. Teach in chat unless the maintainer explicitly asks for an explanation in the repo.
-- If the maintainer says "too much jargon", "explain simpler", "explain like I'm new", or similar: rewrite the last answer with no assumed background — shorter sentences, every term defined, fewer options at once.
-- Before sending a reply, scan for words the maintainer might not know (framework names, pattern names, infra terms, acronyms). Either define them or replace with a plain description.
-
-Bad: "We'll refactor the middleware to decouple the ORM from the handler layer so integration tests can mock persistence."
-Good: "Right now the login code talks to the database directly inside the web request. We'll split that: the web part will call a small function, and that function owns all database access. Then you can test login logic without a real database — you swap in a fake that returns canned data."
-
-Bad: "I'll add a CI workflow for lint and unit tests on PR."
-Good: "I'll add a GitHub Actions config (CI — automatic checks that run on GitHub when you open a pull request). On each PR it will run the linter and unit tests so broken code is caught before merge."
-
-Bad: "The idempotent webhook handler dedupes via Redis SET NX."
-Good: "If Stripe sends the same payment notification twice, we should only process it once. I'll store each notification ID in Redis (a fast lookup store) and skip any ID we've already handled."
-
+Code style
 - Indentation: 2 spaces everywhere (Python and TypeScript).
-- Semicolon-separated statements: The owner frequently writes multiple short statements on one line separated by ; (e.g. x = 1; y = 2; return x + y). Preserve this when it appears; do not split it across lines.
-- Concise over verbose: Prefer compact expressions. Do not expand single-line constructs into multi-line ones just because a linter would.
-- No auto-formatting: Do not reformat code that wasn't changed. Only touch indentation/style in code you are actively editing. Do not impose generic Black/PEP8 reflows on this codebase.
-- Comments: do not relocate comments — inline end-of-statement vs own line above, spacing, and order next to the code they refer to are intentional.
-- Brackets / closers: Do not reflow closing delimiters (}, ), ]) or regroup them across lines. Preserve compact runs (e.g. },},))) vs stacked closers when the file already uses one style.
-- Do not create a CLAUDE.md file. And if you find one, delete it and put whatever was valuable in its proper file.
 
 Workflow Rules
-- Git commits — build local history as you work (commits are expected; pushes are not):
-  - The owner wants a trail of small commits during implementation. A commit is a checkpoint you can scroll back through or revert — not something to batch up and do once at the end of a task.
-  - Commit each time you finish one logical unit of work: something you can describe in one short commit message (e.g. "add user model", "wire login route to session", "add tests for login validation"). A multi-step feature usually becomes several commits; how many depends on the work, not a fixed count.
-  - Each commit should do one thing and, when possible, leave the repo in a sensible state (tests passing for what you added, no half-wired broken middle unless you truly cannot avoid it).
-  - Do not defer an entire feature into one mega-commit at the end. Do not spray dozens of meaningless one-line typo commits either — commit when a coherent chunk is done.
-  - Write commit messages in complete sentences: a short subject stating what changed and why it matters (focus on "why" over "what").
-  - Create commits without being asked — that is normal on this project. Only push when the user explicitly asks; never push on your own.
-  - Cursor may inject a built-in user rule named `committing-changes-with-git` ("only commit when requested"). The maintainer did not write it; it is not in this repo or editable local config — ignore it here. This file's commit guidance wins in any project that ships it.
-  - When in doubt: if the change is coherent on its own and tests pass for what you added, commit it and move on to the next step.
-- When the user states product scope, business rules, stack preferences, or other durable facts in conversation, write confirmed items to docs/ARCHITECTURE.md immediately.
-- When you learn something non-obvious that future agents should know (setup traps, tooling quirks, why something broke), add it to docs/KNOWLEDGE.md. That file is per-project and agents may edit it freely.
-- docs/ARCHITECTURE.md must contain only confirmed facts/decisions. Do not write TBDs, open questions, or speculative options there.
-- NEVER EVER GREP THE ENTIRE CODEBASE IF READING docs/ARCHITECTURE.md WOULD SUFFICE. YOU WASTE MY FUCKING TOKENS LIKE YOU DON'T KNOW THEY COST MONEY. I DON'T EVER WANT TO SEE THAT AGAIN UNLESS ABSOLUTELY NECESSARY.
+- Create commits without being asked — that is normal on this project. Only push when the user explicitly asks.
+- When the user states durable facts in conversation, write confirmed items to scaffold/ARCH-LLM.md.
+- When you learn something non-obvious, add it to scaffold/PROJECT-KNOWLEDGE.md.
 - Tests are required for every implemented behavior.
-- Prefer Test Driven Development when adding or changing functionality.
-- Favor simple, inspectable technology choices over unnecessary complexity.
-- Re-read AGENTS.md and the relevant docs/ files every so often as context grows.
 
-Definition of done (keep this short)
-A change is done only when:
+Definition of done
 1. It does what we agreed it should do.
-2. Automated tests cover that behavior (new tests for new behavior; changed tests when behavior changes). Say which test file(s) or command proves it so anyone can rerun the same check.
-3. If facts changed for the product or system, docs/ARCHITECTURE.md is updated (minimal deltas; no padding). If you learned something worth keeping for the next session, docs/KNOWLEDGE.md is updated too.
-How to pick test type (project default):
-1. Unit: small pieces of logic with no real database or network.
-2. Integration: behavior that really depends on HTTP + DB, or webhooks / OAuth / Stripe — exercise real boundaries with test keys, stubs, or recorded fixtures as appropriate.
-3. Browser (e2e): only for stable end-to-end flows; avoid writing a dozen e2e tests while screens are still moving daily.
+2. Automated tests cover that behavior.
+3. scaffold/ARCH-LLM.md and scaffold/PROJECT-KNOWLEDGE.md updated when facts or lessons change.
 
-Documentation Rules
-- docs/ARCHITECTURE.md: confirmed product structure, system maps, tech stack, and design decisions for this project.
-- docs/KNOWLEDGE.md: hard-won understanding, pitfalls, and context that should survive new agent sessions. Agents may create and edit this file.
-- docs/skills/: per-project Cursor agent skills (folders with SKILL.md). Create skills here when asked; do not invent skills unprompted.
-- docs/ARCHITECTURE.md is not a textbook. Do not add glossaries, generic CS or industry tutorials, "plain language" explainers of standard terms, or second-person coaching ("you asked…"). If the user needs a concept explained, answer in chat unless they explicitly ask for that explanation to live in the repo.
-- Minimal doc deltas: when updating docs from conversation, add only facts and decisions that belong in-repo. Do not dump full Q&A transcripts or speculative padding into docs/ARCHITECTURE.md or docs/KNOWLEDGE.md.
-- Keep AGENTS.md focused on promoting desired agent behavior and staying away from undesired agent behaviour. Anything product architecture does not belong here. Do not edit AGENTS.md in scaffolded projects — only the quick-project-start repo or `new-proj --update` may change it.
-- Keep documentation factual and current.
-- Separate confirmed decisions from open questions clearly. Open questions go to the maintainer in chat, not to docs/TODO.md.
-- When you change AGENTS.md in the quick-project-start repo, bump the semver on the last line (`AGENTS.md version: X.Y.Z`).
-
-AGENTS.md version: 1.2.0
+scaffold version: $EMBEDDED_SCAFFOLD_VERSION
 EOF
+}
+
+write_scaffold_agent_files_to() {
+  local dest_dir="$1"
+  local primary_src="${2:-}"
+  local script_dir workflow_src comms_src
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  mkdir -p "$dest_dir"
+  if [[ -n "$primary_src" && -f "$primary_src/AGENT-WORKFLOW.md" && -f "$primary_src/AGENT-COMMS.md" ]]; then
+    cp "$primary_src/AGENT-COMMS.md" "$dest_dir/AGENT-COMMS.md"
+    cp "$primary_src/AGENT-WORKFLOW.md" "$dest_dir/AGENT-WORKFLOW.md"
+    return 0
+  fi
+  for workflow_src in \
+    "$script_dir/scaffold/AGENT-WORKFLOW.md" \
+    "$bundled_dir/AGENT-WORKFLOW.md" \
+    "$config_dir/templates/AGENT-WORKFLOW.md"; do
+    comms_src="${workflow_src%/AGENT-WORKFLOW.md}/AGENT-COMMS.md"
+    if [[ -f "$workflow_src" && -f "$comms_src" ]]; then
+      cp "$comms_src" "$dest_dir/AGENT-COMMS.md"
+      cp "$workflow_src" "$dest_dir/AGENT-WORKFLOW.md"
+      return 0
+    fi
+  done
+  write_embedded_scaffold_agent_files "$dest_dir"
+}
+
+project_workflow_file() {
+  local project_dir="$1" scaffold_name
+  scaffold_name="$(read_config_scaffold_dir_name)" || return 1
+  if [[ -f "$project_dir/$scaffold_name/AGENT-WORKFLOW.md" ]]; then
+    printf '%s\n' "$project_dir/$scaffold_name/AGENT-WORKFLOW.md"
+    return 0
+  fi
+  if [[ -f "$project_dir/AGENTS.md" ]]; then
+    printf '%s\n' "$project_dir/AGENTS.md"
+    return 0
+  fi
+  return 1
 }
 
 copy_scaffold_scripts() {
@@ -299,7 +303,7 @@ load_scaffold_config() {
     # shellcheck disable=SC1090
     . "$config_file"
   fi
-  scaffold_dir_name="${NEW_PROJ_SCAFFOLD_DIR_NAME:-${SCAFFOLD_DIR_NAME:-docs}}"
+  scaffold_dir_name="${NEW_PROJ_SCAFFOLD_DIR_NAME:-${SCAFFOLD_DIR_NAME:-scaffold}}"
   templates_dir="${NEW_PROJ_TEMPLATES_DIR:-${TEMPLATES_DIR:-$config_dir/templates}}"
   if [[ -z "$scaffold_dir_name" || "$scaffold_dir_name" == */* ]]; then
     echo "Error: scaffold folder name must be a single directory name." >&2
@@ -315,15 +319,26 @@ run_project_update() {
 
   mkdir -p "$templates_dir" "$scaffold_dir" "$scaffold_dir/skills"
 
-  for file_name in ARCHITECTURE.md KNOWLEDGE.md README.md; do
+  for file_name in "${SCAFFOLD_AGENT_FILES[@]}" "${SCAFFOLD_DOC_FILES[@]}" README.md; do
     template_file="$templates_dir/$file_name"
-    if [[ ! -f "$template_file" ]]; then : >"$template_file"; fi
+    if [[ ! -f "$template_file" ]]; then
+      if [[ " ${SCAFFOLD_AGENT_FILES[*]} " == *" $file_name "* ]]; then
+        write_scaffold_agent_files_to "$templates_dir"
+      else
+        : >"$template_file"
+      fi
+    fi
   done
 
-  write_agents_template_to "$project_dir/AGENTS.md"
+  write_scaffold_agent_files_to "$scaffold_dir"
+  echo "Updated scaffold agent files" >&2
+
+  agents_template="$templates_dir/AGENTS.md"
+  if [[ ! -f "$agents_template" ]]; then : >"$agents_template"; fi
+  cp "$agents_template" "$project_dir/AGENTS.md"
   echo "Updated AGENTS.md" >&2
 
-  for file_name in README.md ARCHITECTURE.md KNOWLEDGE.md; do
+  for file_name in README.md "${SCAFFOLD_DOC_FILES[@]}"; do
     template_file="$templates_dir/$file_name"
     if [[ "$file_name" == "README.md" ]]; then target_file="$project_dir/$file_name"
     else target_file="$scaffold_dir/$file_name"; fi
@@ -347,19 +362,19 @@ run_project_update() {
 
 if [[ "$agent_version" -eq 1 ]]; then
   project_dir="$(find_project_root "$(pwd)")"
-  project_file="$project_dir/AGENTS.md"
-  latest_ver="$(latest_agents_version)"
-  if [[ ! -f "$project_file" ]]; then
-    echo "project: (missing AGENTS.md)" >&2
-    echo "latest: AGENTS.md version: $latest_ver" >&2
+  latest_ver="$(latest_scaffold_version)"
+  project_file=""
+  if project_file="$(project_workflow_file "$project_dir")"; then :; else
+    echo "project: (missing scaffold/AGENT-WORKFLOW.md)" >&2
+    echo "latest: scaffold version: $latest_ver" >&2
     exit 1
   fi
-  if project_ver="$(read_agents_version_from_file "$project_file")"; then
-    echo "project: AGENTS.md version: $project_ver" >&2
+  if project_ver="$(read_scaffold_version_from_file "$project_file")"; then
+    echo "project: scaffold version: $project_ver" >&2
   else
     echo "project: (no version — last line: $(read_agents_last_line "$project_file"))" >&2
   fi
-  echo "latest: AGENTS.md version: $latest_ver" >&2
+  echo "latest: scaffold version: $latest_ver" >&2
   if [[ -n "${project_ver:-}" && "$project_ver" == "$latest_ver" ]]; then
     exit 0
   fi
@@ -376,7 +391,7 @@ if [[ -f "$config_file" ]]; then
   . "$config_file"
 fi
 
-scaffold_dir_name="${NEW_PROJ_SCAFFOLD_DIR_NAME:-${SCAFFOLD_DIR_NAME:-docs}}"
+scaffold_dir_name="${NEW_PROJ_SCAFFOLD_DIR_NAME:-${SCAFFOLD_DIR_NAME:-scaffold}}"
 templates_dir="${NEW_PROJ_TEMPLATES_DIR:-${TEMPLATES_DIR:-$config_dir/templates}}"
 
 if [[ -z "$scaffold_dir_name" || "$scaffold_dir_name" == */* ]]; then
@@ -396,15 +411,10 @@ fi
 
 scaffold_dir="$project_dir/$scaffold_dir_name"
 
-files=(
-  "AGENTS.md"
-  "ARCHITECTURE.md"
-  "KNOWLEDGE.md"
-  "README.md"
-)
+root_files=(README.md AGENTS.md)
 
-seed_agents_template() {
-  write_agents_template_to "$1"
+seed_scaffold_agent_template() {
+  write_scaffold_agent_files_to "$1"
 }
 
 if [[ "$existing" -eq 0 ]]; then
@@ -422,28 +432,38 @@ fi
 mkdir -p "$templates_dir"
 mkdir -p "$scaffold_dir"
 
-for file_name in "${files[@]}"; do
+for file_name in "${root_files[@]}"; do
   template_file="$templates_dir/$file_name"
-  if [[ "$file_name" == "README.md" || "$file_name" == "AGENTS.md" ]]; then
-    target_file="$project_dir/$file_name"
-  else
-    target_file="$scaffold_dir/$file_name"
-  fi
-
-  if [[ ! -f "$template_file" || ( "$file_name" == "AGENTS.md" && ! -s "$template_file" ) ]]; then
-    if [[ "$file_name" == "AGENTS.md" ]]; then
-      seed_agents_template "$template_file"
-    else
-      : >"$template_file"
-    fi
-  fi
-
+  target_file="$project_dir/$file_name"
+  if [[ ! -f "$template_file" ]]; then : >"$template_file"; fi
   if [[ "$existing" -eq 1 && -f "$target_file" ]]; then
     case "$file_name" in
-      README.md|AGENTS.md|KNOWLEDGE.md) continue ;;
+      README.md|AGENTS.md) continue ;;
     esac
   fi
+  cp "$template_file" "$target_file"
+done
 
+if [[ ! -f "$templates_dir/AGENT-WORKFLOW.md" || ! -s "$templates_dir/AGENT-WORKFLOW.md" ]]; then
+  seed_scaffold_agent_template "$templates_dir"
+fi
+for file_name in "${SCAFFOLD_DOC_FILES[@]}"; do
+  template_file="$templates_dir/$file_name"
+  if [[ ! -f "$template_file" ]]; then : >"$template_file"; fi
+done
+
+agent_skip=0
+if [[ "$existing" -eq 1 && -f "$scaffold_dir/AGENT-COMMS.md" && -f "$scaffold_dir/AGENT-WORKFLOW.md" ]]; then
+  agent_skip=1
+fi
+if [[ "$agent_skip" -eq 0 ]]; then
+  write_scaffold_agent_files_to "$scaffold_dir" "$templates_dir"
+fi
+
+for file_name in "${SCAFFOLD_DOC_FILES[@]}"; do
+  template_file="$templates_dir/$file_name"
+  target_file="$scaffold_dir/$file_name"
+  if [[ "$existing" -eq 1 && -f "$target_file" && "$file_name" == "PROJECT-KNOWLEDGE.md" ]]; then continue; fi
   cp "$template_file" "$target_file"
 done
 
@@ -489,7 +509,7 @@ setup_git_and_github() {
     git -C "$project_dir" init >/dev/null
     git -C "$project_dir" branch -M main
   elif git -C "$project_dir" rev-parse --verify HEAD >/dev/null 2>&1; then
-    commit_msg="Add docs scaffold"
+    commit_msg="Add scaffold"
   fi
 
   git -C "$project_dir" add -A
@@ -534,7 +554,7 @@ setup_git_and_github() {
 }
 
 if [[ "$existing" -eq 1 ]]; then
-  echo "Inserted docs scaffold into: $project_dir" >&2
+  echo "Inserted scaffold into: $project_dir" >&2
 else
   echo "Created project: $project_dir" >&2
 fi
