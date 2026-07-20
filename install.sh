@@ -70,7 +70,7 @@ sync_managed_templates() {
       echo "Warning: missing scaffold agent file $repo_scaffold_dir/$file_name; skipped." >&2
     fi
   done
-  for file_name in ARCH-HUMAN.md ARCH-LLM.md PROJECT-KNOWLEDGE.md README.md AGENTS.md sz.py; do
+  for file_name in ARCH-HUMAN.md ARCH-LLM.md README.md AGENTS.md sz.py; do
     if [[ -f "$repo_templates_dir/$file_name" ]]; then
       cp "$repo_templates_dir/$file_name" "$templates_dir/$file_name"
     else
@@ -80,7 +80,7 @@ sync_managed_templates() {
   if [[ -f "$repo_templates_dir/.gitignore" ]]; then
     cp "$repo_templates_dir/.gitignore" "$templates_dir/.gitignore"
   fi
-  for deprecated in DEPLOY.md TODO.md ARCHITECTURE.md KNOWLEDGE.md AGENT-UNDERSTANDING.md; do
+  for deprecated in DEPLOY.md TODO.md ARCHITECTURE.md KNOWLEDGE.md AGENT-UNDERSTANDING.md PROJECT-KNOWLEDGE.md; do
     rm -f "$templates_dir/$deprecated"
     rm -f "$bundled_dir/$deprecated"
   done
@@ -110,9 +110,9 @@ install_shell_integration_zshrc() {
   # Fixed-string grep only (no zsh parsing). Skip append if marker or source line exists anywhere in the file.
   if [[ -f "$zshrc" ]] && {
     grep -qF "$shell_integration_marker" "$zshrc" ||
-    grep -qF 'quick-proj/shell-integration.zsh' "$zshrc" ||
-    grep -qF "$legacy_shell_marker" "$zshrc" ||
-    grep -qF 'new-proj/shell-integration.zsh' "$zshrc"
+      grep -qF 'quick-proj/shell-integration.zsh' "$zshrc" ||
+      grep -qF "$legacy_shell_marker" "$zshrc" ||
+      grep -qF 'new-proj/shell-integration.zsh' "$zshrc"
   }; then
     echo "Shell integration: already in ~/.zshrc"
     return 0
