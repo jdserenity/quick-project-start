@@ -7,8 +7,8 @@
 - `--existing` from inside a project: copy scaffold into cwd; git/GitHub unless `--no-repo`; preserve existing root `README.md`, `.gitignore`; migrate legacy `docs/` → `scaffold/` when present; no `cd`.
 - `--update`: refresh scaffold agent files and root `AGENTS.md`; add missing scaffold files; never delete; rename `docs/` → `scaffold/` when `docs/` exists and `scaffold/` does not; resolve root via `git rev-parse --show-toplevel` or walk up to nearest `scaffold/AGENT-WORKFLOW.md` / `docs/AGENT-WORKFLOW.md` / root `AGENTS.md`.
 - `--agent-version`: print project vs latest `scaffold version: X.Y.Z` from `scaffold/AGENT-WORKFLOW.md` last line; exit 0 on match.
-- `scaffold/AGENT-WORKFLOW.md` ends with `scaffold version: X.Y.Z`; bump when agent rule files change. Agents do not edit agent workflow files in scaffolded projects.
-- Agent rules have one home in this repo: `scaffold/AGENT-COMMS.md` + `scaffold/AGENT-WORKFLOW.md`. Not duplicated under `templates/`.
+- Version line `scaffold version: X.Y.Z` lives on `templates/AGENT-WORKFLOW.md` (and is copied into each project's `scaffold/AGENT-WORKFLOW.md`). Bump when agent rule templates change. Agents do not edit agent workflow files in scaffolded projects.
+- Agent rules have one home in this repo: `templates/AGENT-COMMS.md` + `templates/AGENT-WORKFLOW.md`. This repo's `scaffold/AGENT-*.md` are consumer copies synced by `./install.sh`.
 - Normal runs print `cd` on stdout; `install.sh` adds zsh shell integration to eval `cd`.
 - New projects: root `AGENTS.md` (pointer to scaffold/), `README.md`, `.gitignore`, `scripts/sz.py`; scaffold files under `scaffold/` (or `SCAFFOLD_DIR_NAME`, except legacy `"docs"` which is treated as `"scaffold"`).
 - This repo is versioned source; `install.sh` copies CLI + `lib/` to `~/.local`.
@@ -27,9 +27,11 @@ quick-project-start/
     git.sh
   install.sh
   README.md
-  templates/          # blank project files only (not agent rules)
-  scaffold/           # agent rules live here only (+ this repo's ARCH docs)
+  templates/          # product source (agent rules + blank project files)
     AGENT-COMMS.md
+    AGENT-WORKFLOW.md
+  scaffold/           # this repo's project docs + synced agent-rule copies
+    AGENT-COMMS.md    # synced from templates/ by install.sh
     AGENT-WORKFLOW.md
     ARCH-HUMAN.md
     ARCH-LLM.md
@@ -44,8 +46,8 @@ quick-project-start/
 | `~/.local/bin/quick-proj` | Installed CLI entrypoint |
 | `~/.local/share/quick-proj/lib/` | Installed modules |
 | `~/.config/quick-proj/config.env` | `SCAFFOLD_DIR_NAME` (default `scaffold`; `"docs"` rewritten to `scaffold`), optional `BASE_DIR`, `TEMPLATES_DIR` |
-| `~/.config/quick-proj/templates/` | Blank project templates (ARCH/README/AGENTS/gitignore/sz.py); synced on every `./install.sh` |
-| `~/.config/quick-proj/bundled/` | Agent rules copied from repo `scaffold/` on install; used for create/`--update` when not running from a checkout |
+| `~/.config/quick-proj/templates/` | All project templates including agent rules; synced from repo `templates/` on every `./install.sh` |
+| `~/.config/quick-proj/bundled/` | Legacy mirror of agent rules (still refreshed on install) for older `--update` paths |
 
 Per-run env: `QUICK_PROJ_BASE_DIR`, `QUICK_PROJ_SCAFFOLD_DIR_NAME`, `QUICK_PROJ_TEMPLATES_DIR`, `QUICK_PROJ_CONFIG_FILE`.
 
@@ -54,7 +56,7 @@ Per-run env: `QUICK_PROJ_BASE_DIR`, `QUICK_PROJ_SCAFFOLD_DIR_NAME`, `QUICK_PROJ_
 Root: `README.md`, `.gitignore`, `scripts/sz.py`
 
 Under scaffold dir:
-- `AGENT-COMMS.md`, `AGENT-WORKFLOW.md` (from checkout `scaffold/` or `bundled/`; overwritten on `--update`)
+- `AGENT-COMMS.md`, `AGENT-WORKFLOW.md` (from checkout `templates/` or installed templates/; overwritten on `--update`)
 - `ARCH-HUMAN.md`, `ARCH-LLM.md` (from templates/; added if missing; not overwritten on `--update`)
 - `skills/` (empty dir)
 
@@ -62,7 +64,7 @@ Under scaffold dir:
 
 ## Install flow
 
-1. `./install.sh` → `~/.local/bin/quick-proj` + `~/.local/share/quick-proj/lib/`, sync `scaffold/AGENT-*.md` → `bundled/`, sync other templates → `templates/`, remove any stale agent copies under `templates/`, create/fix `config.env` (`docs` → `scaffold`).
+1. `./install.sh` → `~/.local/bin/quick-proj` + `~/.local/share/quick-proj/lib/`, sync repo `templates/` → `~/.config/quick-proj/templates/` (+ agent rules into `bundled/` and this checkout's `scaffold/AGENT-*.md`), create/fix `config.env` (`docs` → `scaffold`).
 2. `git pull && ./install.sh` refreshes everything.
 3. `quick-proj --update` in an existing project refreshes agent files; migrates `docs/` → `scaffold/` when needed.
 
@@ -70,8 +72,8 @@ Under scaffold dir:
 
 - **Stack**: Bash; `git` + optional `gh`; `sz.py` Python 3 stdlib only.
 - **Modular CLI**: entrypoint + `lib/*.sh` (not a single opaque script).
-- **Agent rules DRY**: edit only `scaffold/AGENT-COMMS.md` / `scaffold/AGENT-WORKFLOW.md`; install copies to `bundled/`; source order checkout scaffold → bundled → embedded stub (`0.0.0`).
-- **Templates synced every install** — no stale `~/.config/quick-proj/templates/` for blank project files.
+- **Agent rules DRY**: edit only `templates/AGENT-COMMS.md` / `templates/AGENT-WORKFLOW.md`; install syncs to installed templates, bundled, and this repo's scaffold copies; source order checkout templates → templates_dir → bundled → embedded stub (`0.0.0`).
+- **Templates synced every install** — no stale `~/.config/quick-proj/templates/`.
 - **Tests**: `tests/run-tests.sh` — isolated `HOME`, temp dirs, fake `gh`.
 - **`--existing`**: `pwd` target; GitHub name = dir basename; skip `gh repo create` if `origin` exists or repo exists.
 - **`--update`**: overwrites `AGENT-COMMS.md`, `AGENT-WORKFLOW.md`, and root `AGENTS.md` only; additive for other scaffold files; `docs/` → `scaffold/` rename when safe.

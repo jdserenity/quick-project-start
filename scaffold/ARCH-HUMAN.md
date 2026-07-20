@@ -55,12 +55,12 @@ quick-project-start/
   lib/              # modules the entrypoint loads
   install.sh        # installs quick-proj globally
   README.md         # usage for this repo
-  templates/        # blank project files (README, ARCH stubs, etc.) — not agent rules
-  scaffold/         # agent rules (edit here only) + this project's docs
+  templates/        # product source: agent rules + blank project files
+  scaffold/         # this project's own docs + agent-rule copies (refreshed from templates/)
   tests/
 ```
 
-When you change agent rules, edit only `scaffold/AGENT-COMMS.md` or `scaffold/AGENT-WORKFLOW.md`, bump the version line at the bottom of `AGENT-WORKFLOW.md`, then run `./install.sh`. That copies the rules into `~/.config/quick-proj/bundled/` so other projects can pick them up with `quick-proj --update`.
+When you change agent rules, edit only `templates/AGENT-COMMS.md` or `templates/AGENT-WORKFLOW.md`, bump the version line at the bottom of `templates/AGENT-WORKFLOW.md`, then run `./install.sh`. That installs the templates globally and refreshes this repo's `scaffold/AGENT-*.md` copies. Other projects pick up the new rules with `quick-proj --update`.
 
 ## Configure defaults
 

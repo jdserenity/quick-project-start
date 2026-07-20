@@ -121,7 +121,8 @@ EOF
 }
 
 seed_standard_templates() {
-  # Agent rules are not templates — they come from repo scaffold/ (or bundled/ after install).
+  # When tests run against the repo checkout, agent rules come from ROOT/templates/.
+  # Seed only the blank project templates here.
   printf '%s\n' 'custom-agents-pointer' >"$QUICK_PROJ_TEMPLATES_DIR/AGENTS.md"
   printf '%s\n' 'custom-readme' >"$QUICK_PROJ_TEMPLATES_DIR/README.md"
   printf '%s\n' 'custom-arch-human' >"$QUICK_PROJ_TEMPLATES_DIR/ARCH-HUMAN.md"

@@ -42,7 +42,7 @@ EOF
 
 ensure_template_stubs() {
   local file_name template_file
-  # Agent rules are not templates — they come from scaffold/ (or bundled/ after install).
+  # Agent rules are seeded into projects from templates/ (or bundled/); stubs are for blank docs only.
   for file_name in "${SCAFFOLD_DOC_FILES[@]}" README.md AGENTS.md; do
     template_file="$templates_dir/$file_name"
     if [[ ! -f "$template_file" ]]; then

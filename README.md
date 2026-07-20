@@ -22,7 +22,7 @@ git pull
 ./install.sh
 ```
 
-`install.sh` refreshes the binary, lib modules, bundled agent rules (from `scaffold/AGENT-*.md`), and project templates under `~/.config/quick-proj/templates/` (including `sz.py`). If `config.env` still has `SCAFFOLD_DIR_NAME="docs"`, install rewrites it to `"scaffold"`.
+`install.sh` refreshes the binary, lib modules, and all files under `~/.config/quick-proj/templates/` from this repo's `templates/` (including agent rules and `sz.py`). It also refreshes this checkout's `scaffold/AGENT-*.md` from those templates, and keeps a legacy copy under `~/.config/quick-proj/bundled/`. If `config.env` still has `SCAFFOLD_DIR_NAME="docs"`, install rewrites it to `"scaffold"`.
 
 ## Usage
 
@@ -65,19 +65,17 @@ Global runtime config:
   - optional: `TEMPLATES_DIR="/some/path"`
   - optional: `SCRIPTS_DIR="/some/path"`
 
-Agent rules (edit only in this repo's `scaffold/`; refreshed on every `./install.sh`):
+Global templates (edit these in the repo; refreshed on every `./install.sh`):
 
-- `~/.config/quick-proj/bundled/`
-  - `AGENT-COMMS.md`, `AGENT-WORKFLOW.md`
-
-Global templates (refreshed on every `./install.sh`):
-
-- `~/.config/quick-proj/templates/`
+- `templates/` in this repo → `~/.config/quick-proj/templates/`
+  - `AGENT-COMMS.md`, `AGENT-WORKFLOW.md` (product source for agent rules)
   - `ARCH-HUMAN.md`, `ARCH-LLM.md`
   - `AGENTS.md` (root pointer to scaffold/)
   - `README.md`
   - `.gitignore`
   - `sz.py` (copied into project root `scripts/` when scaffolding)
+
+This repo's `scaffold/AGENT-*.md` files are consumer copies (like any other project). `./install.sh` refreshes them from `templates/`.
 
 Per-run overrides:
 
