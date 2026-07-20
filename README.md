@@ -22,7 +22,7 @@ git pull
 ./install.sh
 ```
 
-`install.sh` refreshes the binary, lib modules, bundled scaffold agent files, and all files under `~/.config/quick-proj/templates/` from this repo (including `sz.py`). If `config.env` still has `SCAFFOLD_DIR_NAME="docs"`, install rewrites it to `"scaffold"`.
+`install.sh` refreshes the binary, lib modules, bundled agent rules (from `scaffold/AGENT-*.md`), and project templates under `~/.config/quick-proj/templates/` (including `sz.py`). If `config.env` still has `SCAFFOLD_DIR_NAME="docs"`, install rewrites it to `"scaffold"`.
 
 ## Usage
 
@@ -65,10 +65,14 @@ Global runtime config:
   - optional: `TEMPLATES_DIR="/some/path"`
   - optional: `SCRIPTS_DIR="/some/path"`
 
+Agent rules (edit only in this repo's `scaffold/`; refreshed on every `./install.sh`):
+
+- `~/.config/quick-proj/bundled/`
+  - `AGENT-COMMS.md`, `AGENT-WORKFLOW.md`
+
 Global templates (refreshed on every `./install.sh`):
 
 - `~/.config/quick-proj/templates/`
-  - `AGENT-COMMS.md`, `AGENT-WORKFLOW.md`
   - `ARCH-HUMAN.md`, `ARCH-LLM.md`
   - `AGENTS.md` (root pointer to scaffold/)
   - `README.md`

@@ -25,20 +25,14 @@ read_scaffold_version_from_file() {
   return 1
 }
 
-# Prefer checkout scaffold/, then bundled/, then templates/, else embedded constant.
+# Prefer checkout scaffold/, then bundled/. (0.0.0 means install is broken / missing files.)
 resolve_latest_workflow_path() {
-  local templates_workflow
   if [[ -f "$SCRIPT_DIR/scaffold/AGENT-WORKFLOW.md" ]]; then
     printf '%s\n' "$SCRIPT_DIR/scaffold/AGENT-WORKFLOW.md"
     return 0
   fi
   if [[ -f "$bundled_dir/AGENT-WORKFLOW.md" ]]; then
     printf '%s\n' "$bundled_dir/AGENT-WORKFLOW.md"
-    return 0
-  fi
-  templates_workflow="$config_dir/templates/AGENT-WORKFLOW.md"
-  if [[ -f "$templates_workflow" && -s "$templates_workflow" ]]; then
-    printf '%s\n' "$templates_workflow"
     return 0
   fi
   return 1
@@ -52,7 +46,7 @@ latest_scaffold_version() {
       return 0
     fi
   fi
-  printf '%s\n' "$EMBEDDED_SCAFFOLD_VERSION"
+  printf '%s\n' "0.0.0"
 }
 
 run_agent_version() {

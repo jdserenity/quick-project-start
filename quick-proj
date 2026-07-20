@@ -21,8 +21,6 @@ usage() {
 }
 
 # --- constants ---
-EMBEDDED_SCAFFOLD_VERSION=2.4.0
-SCAFFOLD_AGENT_FILES=(AGENT-COMMS.md AGENT-WORKFLOW.md)
 SCAFFOLD_DOC_FILES=(ARCH-HUMAN.md ARCH-LLM.md)
 
 # --- locate and load lib/ ---

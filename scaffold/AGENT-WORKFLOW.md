@@ -43,4 +43,4 @@ How to pick test type (project default):
 3. Browser (e2e): only for stable end-to-end flows; avoid writing a dozen e2e tests while screens are still moving daily.
 
 
-scaffold version: 2.4.0
+scaffold version: 2.5.0

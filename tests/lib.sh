@@ -121,8 +121,7 @@ EOF
 }
 
 seed_standard_templates() {
-  printf '%s\n' 'custom-agent-comms' >"$QUICK_PROJ_TEMPLATES_DIR/AGENT-COMMS.md"
-  printf '%s\n' 'custom-agent-workflow' >"$QUICK_PROJ_TEMPLATES_DIR/AGENT-WORKFLOW.md"
+  # Agent rules are not templates — they come from repo scaffold/ (or bundled/ after install).
   printf '%s\n' 'custom-agents-pointer' >"$QUICK_PROJ_TEMPLATES_DIR/AGENTS.md"
   printf '%s\n' 'custom-readme' >"$QUICK_PROJ_TEMPLATES_DIR/README.md"
   printf '%s\n' 'custom-arch-human' >"$QUICK_PROJ_TEMPLATES_DIR/ARCH-HUMAN.md"

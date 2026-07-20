@@ -42,14 +42,11 @@ EOF
 
 ensure_template_stubs() {
   local file_name template_file
-  for file_name in "${SCAFFOLD_AGENT_FILES[@]}" "${SCAFFOLD_DOC_FILES[@]}" README.md AGENTS.md; do
+  # Agent rules are not templates — they come from scaffold/ (or bundled/ after install).
+  for file_name in "${SCAFFOLD_DOC_FILES[@]}" README.md AGENTS.md; do
     template_file="$templates_dir/$file_name"
     if [[ ! -f "$template_file" ]]; then
-      if [[ " ${SCAFFOLD_AGENT_FILES[*]} " == *" $file_name "* ]]; then
-        write_scaffold_agent_files_to "$templates_dir"
-      else
-        : >"$template_file"
-      fi
+      : >"$template_file"
     fi
   done
 }
@@ -80,16 +77,12 @@ apply_scaffold_to_project() {
     cp "$template_file" "$target_file"
   done
 
-  if [[ ! -f "$templates_dir/AGENT-WORKFLOW.md" || ! -s "$templates_dir/AGENT-WORKFLOW.md" ]]; then
-    write_scaffold_agent_files_to "$templates_dir"
-  fi
-
   agent_skip=0
   if [[ "$existing_mode" -eq 1 && -f "$scaffold_dir/AGENT-COMMS.md" && -f "$scaffold_dir/AGENT-WORKFLOW.md" ]]; then
     agent_skip=1
   fi
   if [[ "$agent_skip" -eq 0 ]]; then
-    write_scaffold_agent_files_to "$scaffold_dir" "$templates_dir"
+    write_scaffold_agent_files_to "$scaffold_dir"
   fi
 
   for file_name in "${SCAFFOLD_DOC_FILES[@]}"; do

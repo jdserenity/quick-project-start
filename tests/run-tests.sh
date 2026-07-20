@@ -102,11 +102,13 @@ test_creates_scaffold_and_root_readme() {
 
   assert_eq "custom-agents-pointer" "$(tr -d '\n' <"$root/AGENTS.md")"
   assert_eq "custom-readme" "$(tr -d '\n' <"$root/README.md")"
-  assert_eq "custom-agent-comms" "$(tr -d '\n' <"$root/scaffold/AGENT-COMMS.md")"
-  assert_eq "custom-agent-workflow" "$(tr -d '\n' <"$root/scaffold/AGENT-WORKFLOW.md")"
+  assert_contains "$(<"$root/scaffold/AGENT-COMMS.md")" "Communication with the maintainer"
+  assert_contains "$(<"$root/scaffold/AGENT-WORKFLOW.md")" "Indentation: 2 spaces"
   assert_eq "custom-arch-human" "$(tr -d '\n' <"$root/scaffold/ARCH-HUMAN.md")"
   assert_eq "custom-arch-llm" "$(tr -d '\n' <"$root/scaffold/ARCH-LLM.md")"
   assert_eq "node_modules/" "$(tr -d '\n' <"$root/.gitignore")"
+  assert_no_file "$QUICK_PROJ_TEMPLATES_DIR/AGENT-COMMS.md"
+  assert_no_file "$QUICK_PROJ_TEMPLATES_DIR/AGENT-WORKFLOW.md"
 
   teardown_quick_proj_env
 }
@@ -137,28 +139,26 @@ test_respects_config_env_scaffold_name() {
   teardown_quick_proj_env
 }
 
-test_seeds_scaffold_agent_template_when_missing() {
+test_copies_agent_rules_from_checkout_scaffold() {
   setup_quick_proj_env
   run_quick_proj "delta" >/dev/null
 
-  assert_file "$QUICK_PROJ_TEMPLATES_DIR/AGENT-WORKFLOW.md"
-  local workflow_template comms_template
-  workflow_template="$(<"$QUICK_PROJ_TEMPLATES_DIR/AGENT-WORKFLOW.md")"
-  comms_template="$(<"$QUICK_PROJ_TEMPLATES_DIR/AGENT-COMMS.md")"
-  assert_contains "$workflow_template" "Indentation: 2 spaces"
-  assert_contains "$comms_template" "scaffold/ARCH-LLM.md"
+  assert_no_file "$QUICK_PROJ_TEMPLATES_DIR/AGENT-WORKFLOW.md"
+  assert_no_file "$QUICK_PROJ_TEMPLATES_DIR/AGENT-COMMS.md"
 
-  local project_workflow
+  local project_workflow project_comms
   project_workflow="$(<"$QUICK_PROJ_BASE_DIR/delta/scaffold/AGENT-WORKFLOW.md")"
+  project_comms="$(<"$QUICK_PROJ_BASE_DIR/delta/scaffold/AGENT-COMMS.md")"
   assert_contains "$project_workflow" "Indentation: 2 spaces"
+  assert_contains "$project_comms" "scaffold/ARCH-LLM.md"
+  assert_eq "$(shasum -a 256 "$ROOT/scaffold/AGENT-WORKFLOW.md" | awk '{print $1}')" \
+    "$(shasum -a 256 "$QUICK_PROJ_BASE_DIR/delta/scaffold/AGENT-WORKFLOW.md" | awk '{print $1}')"
 
   teardown_quick_proj_env
 }
 
 test_creates_default_gitignore_template_when_missing() {
   setup_quick_proj_env
-  printf '%s\n' 'agent-comms' >"$QUICK_PROJ_TEMPLATES_DIR/AGENT-COMMS.md"
-  printf '%s\n' 'agent-workflow' >"$QUICK_PROJ_TEMPLATES_DIR/AGENT-WORKFLOW.md"
   for f in README.md ARCH-HUMAN.md ARCH-LLM.md; do
     : >"$QUICK_PROJ_TEMPLATES_DIR/$f"
   done
@@ -279,7 +279,7 @@ test_existing_inserts_scaffold_and_agents() {
 
   assert_eq "keep-readme" "$(tr -d '\n' <"$root/README.md")"
   assert_eq "keep-ignore" "$(tr -d '\n' <"$root/.gitignore")"
-  assert_eq "custom-agent-comms" "$(tr -d '\n' <"$root/scaffold/AGENT-COMMS.md")"
+  assert_contains "$(<"$root/scaffold/AGENT-COMMS.md")" "Communication with the maintainer"
   assert_eq "custom-arch-human" "$(tr -d '\n' <"$root/scaffold/ARCH-HUMAN.md")"
   assert_eq "legacy-deploy" "$(tr -d '\n' <"$root/scaffold/DEPLOY.md")"
   assert_eq "legacy-todo" "$(tr -d '\n' <"$root/scaffold/TODO.md")"
@@ -300,7 +300,7 @@ test_existing_adds_readme_when_missing() {
   )
 
   assert_eq "custom-readme" "$(tr -d '\n' <"$root/README.md")"
-  assert_eq "custom-agent-workflow" "$(tr -d '\n' <"$root/scaffold/AGENT-WORKFLOW.md")"
+  assert_contains "$(<"$root/scaffold/AGENT-WORKFLOW.md")" "Indentation: 2 spaces"
 
   teardown_quick_proj_env
 }
@@ -527,8 +527,8 @@ test_shell_integration_agent_version_does_not_eval_stdout() {
     " 2>&1
   )" || out=$?
   assert_eq "0" "$out"
-  assert_contains "$combined" "project: scaffold version: 2.4.0"
-  assert_contains "$combined" "latest: scaffold version: 2.4.0"
+  assert_contains "$combined" "project: scaffold version: 2.5.0"
+  assert_contains "$combined" "latest: scaffold version: 2.5.0"
   if [[ "$combined" == *"command not found: project:"* ]]; then
     echo "FAIL: shell integration eval'd --agent-version stdout as shell commands"
     exit 1
@@ -755,7 +755,7 @@ test_agent_version_shows_stale_and_exits_nonzero() {
   local root="$TEST_TMP/agent-ver-stale" checkout="$TEST_TMP/checkout-ver-stale"
   mkdir -p "$root/scaffold" "$checkout/scaffold"
   stage_quick_proj "$checkout"
-  printf '%s\n' 'scaffold version: 2.4.0' >"$checkout/scaffold/AGENT-WORKFLOW.md"
+  printf '%s\n' 'scaffold version: 2.5.0' >"$checkout/scaffold/AGENT-WORKFLOW.md"
   printf '%s\n' 'scaffold version: 1.0.0' >"$root/scaffold/AGENT-WORKFLOW.md"
   git -C "$root" init -q
   local out=0 stdout
@@ -765,7 +765,7 @@ test_agent_version_shows_stale_and_exits_nonzero() {
   )" || out=$?
   assert_eq "1" "$out"
   assert_contains "$stdout" "project: scaffold version: 1.0.0"
-  assert_contains "$stdout" "latest: scaffold version: 2.4.0"
+  assert_contains "$stdout" "latest: scaffold version: 2.5.0"
   teardown_quick_proj_env
 }
 
@@ -785,7 +785,7 @@ test_agent_version_reports_missing_version_line() {
   )" || out=$?
   assert_eq "1" "$out"
   assert_contains "$stdout" "project: (no version — last line: legacy-agent-workflow)"
-  assert_contains "$stdout" "latest: scaffold version: 2.4.0"
+  assert_contains "$stdout" "latest: scaffold version: 2.5.0"
   teardown_quick_proj_env
 }
 
@@ -808,8 +808,8 @@ test_agent_version_from_subfolder() {
   )"
   out=$?
   assert_eq "0" "$out"
-  assert_contains "$stdout" "project: scaffold version: 2.4.0"
-  assert_contains "$stdout" "latest: scaffold version: 2.4.0"
+  assert_contains "$stdout" "project: scaffold version: 2.5.0"
+  assert_contains "$stdout" "latest: scaffold version: 2.5.0"
   teardown_quick_proj_env
 }
 
@@ -885,14 +885,16 @@ test_install_creates_config_and_templates_when_missing() {
   setup_install_home
   "$INSTALL_SH" >/dev/null
   assert_file "$HOME/.config/quick-proj/config.env"
-  assert_file "$HOME/.config/quick-proj/templates/AGENT-WORKFLOW.md"
-  assert_file "$HOME/.config/quick-proj/templates/AGENT-COMMS.md"
+  assert_file "$HOME/.config/quick-proj/bundled/AGENT-WORKFLOW.md"
+  assert_file "$HOME/.config/quick-proj/bundled/AGENT-COMMS.md"
+  assert_no_file "$HOME/.config/quick-proj/templates/AGENT-WORKFLOW.md"
+  assert_no_file "$HOME/.config/quick-proj/templates/AGENT-COMMS.md"
   assert_file "$HOME/.config/quick-proj/templates/AGENTS.md"
   assert_file "$HOME/.config/quick-proj/templates/README.md"
   assert_file "$HOME/.config/quick-proj/templates/.gitignore"
   local workflow comms
-  workflow="$(<"$HOME/.config/quick-proj/templates/AGENT-WORKFLOW.md")"
-  comms="$(<"$HOME/.config/quick-proj/templates/AGENT-COMMS.md")"
+  workflow="$(<"$HOME/.config/quick-proj/bundled/AGENT-WORKFLOW.md")"
+  comms="$(<"$HOME/.config/quick-proj/bundled/AGENT-COMMS.md")"
   assert_contains "$workflow" "Indentation: 2 spaces"
   assert_contains "$comms" "scaffold/ARCH-LLM.md"
   teardown_install_home
@@ -900,20 +902,23 @@ test_install_creates_config_and_templates_when_missing() {
 
 test_install_refreshes_templates_on_every_run() {
   setup_install_home
-  mkdir -p "$HOME/.config/quick-proj/templates"
+  mkdir -p "$HOME/.config/quick-proj/templates" "$HOME/.config/quick-proj/bundled"
   printf '%s\n' 'SCAFFOLD_DIR_NAME="scaffold"' >"$HOME/.config/quick-proj/config.env"
   printf '%s\n' 'STALE_WORKFLOW' >"$HOME/.config/quick-proj/templates/AGENT-WORKFLOW.md"
+  printf '%s\n' 'STALE_BUNDLED' >"$HOME/.config/quick-proj/bundled/AGENT-WORKFLOW.md"
   printf '%s\n' 'STALE_README' >"$HOME/.config/quick-proj/templates/README.md"
   printf '%s\n' 'stale-knowledge' >"$HOME/.config/quick-proj/templates/PROJECT-KNOWLEDGE.md"
   "$INSTALL_SH" >/dev/null
   local workflow comms readme
-  workflow="$(<"$HOME/.config/quick-proj/templates/AGENT-WORKFLOW.md")"
-  comms="$(<"$HOME/.config/quick-proj/templates/AGENT-COMMS.md")"
+  workflow="$(<"$HOME/.config/quick-proj/bundled/AGENT-WORKFLOW.md")"
+  comms="$(<"$HOME/.config/quick-proj/bundled/AGENT-COMMS.md")"
   readme="$(<"$HOME/.config/quick-proj/templates/README.md")"
-  assert_contains "$workflow" "scaffold version: 2.4.0"
+  assert_contains "$workflow" "scaffold version: 2.5.0"
   assert_contains "$comms" "scaffold/ARCH-LLM.md"
   assert_contains "$comms" "One home per fact"
   assert_contains "$readme" "Brief description"
+  assert_no_file "$HOME/.config/quick-proj/templates/AGENT-WORKFLOW.md"
+  assert_no_file "$HOME/.config/quick-proj/templates/AGENT-COMMS.md"
   assert_no_file "$HOME/.config/quick-proj/templates/PROJECT-KNOWLEDGE.md"
   teardown_install_home
 }
@@ -1037,7 +1042,7 @@ main() {
     test_creates_scaffold_and_root_readme
     test_custom_scaffold_dir_name
     test_respects_config_env_scaffold_name
-    test_seeds_scaffold_agent_template_when_missing
+    test_copies_agent_rules_from_checkout_scaffold
     test_creates_default_gitignore_template_when_missing
     test_git_init_when_git_available
     test_no_repo_skips_git

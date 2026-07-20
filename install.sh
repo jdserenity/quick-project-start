@@ -36,13 +36,15 @@ bundled_dir="$config_dir/bundled"
 mkdir -p "$bundled_dir"
 
 sync_managed_templates() {
+  # Agent rules: single source is repo scaffold/; install copies only to bundled/.
   for file_name in AGENT-COMMS.md AGENT-WORKFLOW.md; do
     if [[ -f "$repo_scaffold_dir/$file_name" ]]; then
       cp "$repo_scaffold_dir/$file_name" "$bundled_dir/$file_name"
-      cp "$repo_scaffold_dir/$file_name" "$templates_dir/$file_name"
     else
       echo "Warning: missing scaffold agent file $repo_scaffold_dir/$file_name; skipped." >&2
     fi
+    # Older installs kept copies under templates/; remove so they cannot drift.
+    rm -f "$templates_dir/$file_name"
   done
   for file_name in ARCH-HUMAN.md ARCH-LLM.md README.md AGENTS.md sz.py; do
     if [[ -f "$repo_templates_dir/$file_name" ]]; then
