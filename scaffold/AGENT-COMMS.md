@@ -12,7 +12,7 @@
 - scaffold/ARCH-HUMAN.md and scaffold/ARCH-LLM.md are not textbooks. Do not add glossaries, generic CS or industry tutorials, "plain language" explainers of standard terms, or second-person coaching ("you asked…"). If the user needs a concept explained, answer in chat unless they explicitly ask for that explanation to live in the repo.
 - Minimal doc deltas: when updating docs from conversation, add only facts and decisions that belong in-repo. Do not dump full Q&A transcripts or speculative padding into scaffold architecture files.
 - Keep documentation factual and current. It should be updated whenever valuable.
-- When working in the quick-project-start repo, and you and the user change agent rule templates, bump the semver on the last line of `templates/AGENT-WORKFLOW.md` (`scaffold version: X.Y.Z`), then run `./install.sh` so this repo's `scaffold/` copies stay in sync.
+- When working in the quick-project-start repo, and you and the user change agent rule templates, bump only the **patch** number on the last line of `templates/AGENT-WORKFLOW.md` (`scaffold version: X.Y.Z` → `X.Y.(Z+1)`) for wording, clarifications, refactors, and tooling. Bump **minor** (Y) only when scaffolded projects get a meaningful new policy or behavior they should notice. Bump **major** (X) only for breaking layout or workflow changes. Then run `./install.sh` so this repo's `scaffold/` copies stay in sync.
 
 
 
