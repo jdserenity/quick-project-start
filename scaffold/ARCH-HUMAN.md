@@ -1,10 +1,10 @@
-# new-proj
+# quick-proj
 
 ## What this is
 
-`new-proj` is a command you run in the terminal. It creates a new coding project folder with a standard layout: agent rules, architecture notes, a README, git, and (if you have GitHub CLI set up) a GitHub repo.
+`quick-proj` is a command you run in the terminal. It creates a new coding project folder with a standard layout: agent rules, architecture notes, a README, git, and (if you have GitHub CLI set up) a GitHub repo.
 
-This repo (`quick-project-start`) is where that command is built and maintained. Running `./install.sh` copies it to `~/.local/bin/new-proj` on your machine.
+This repo (`quick-project-start`) is where that command is built and maintained. Running `./install.sh` copies it to `~/.local/bin/quick-proj` on your machine.
 
 ## Install and update
 
@@ -24,11 +24,11 @@ git pull
 
 | Command | What it does |
 |---------|--------------|
-| `new-proj "my-app"` | Creates `~/Documents/coding-temp/my-app/` with scaffold files, git, and GitHub |
-| `new-proj --no-repo "my-app"` | Same but skips git and GitHub |
-| `new-proj --existing` | Adds scaffold files to the current directory |
-| `new-proj --update` | Refreshes agent rules and adds any missing scaffold files in an existing project |
-| `new-proj --agent-version` | Shows whether your project's scaffold rules are up to date |
+| `quick-proj "my-app"` | Creates `~/Documents/coding-temp/my-app/` with scaffold files, git, and GitHub |
+| `quick-proj --no-repo "my-app"` | Same but skips git and GitHub |
+| `quick-proj --existing` | Adds scaffold files to the current directory |
+| `quick-proj --update` | Refreshes agent rules and adds any missing scaffold files in an existing project |
+| `quick-proj --agent-version` | Shows whether your project's scaffold rules are up to date |
 
 ## What a new project looks like
 
@@ -52,8 +52,8 @@ Root `AGENTS.md` points agents at `scaffold/` and says scaffold rules override e
 
 ```
 quick-project-start/
-  new-proj          # the CLI script
-  install.sh        # installs new-proj globally
+  quick-proj        # the CLI script
+  install.sh        # installs quick-proj globally
   README.md         # usage for this repo
   templates/        # blank files copied into new projects
   scaffold/         # this project's own docs and agent rules
@@ -62,7 +62,7 @@ quick-project-start/
 
 ## Configure defaults
 
-Edit `~/.config/new-proj/config.env`:
+Edit `~/.config/quick-proj/config.env`:
 
 - `SCAFFOLD_DIR_NAME="scaffold"` — folder name for project docs (default)
 - `BASE_DIR` — where new projects are created

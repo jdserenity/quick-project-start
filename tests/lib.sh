@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-NEW_PROJ="$ROOT/new-proj"
+QUICK_PROJ="$ROOT/quick-proj"
 INSTALL_SH="$ROOT/install.sh"
 
 TESTS_RUN=0
@@ -99,7 +99,7 @@ run_test() {
   fi
 }
 
-setup_new_proj_env() {
+setup_quick_proj_env() {
   TEST_TMP="$(mktemp -d)"
   export TEST_TMP
   export PATH="$TEST_TMP/fake-bin:$PATH"
@@ -113,34 +113,34 @@ exit 1
 EOF
   chmod +x "$TEST_TMP/fake-bin/gh"
 
-  export NEW_PROJ_BASE_DIR="$TEST_TMP/projects"
-  export NEW_PROJ_TEMPLATES_DIR="$TEST_TMP/templates"
-  export NEW_PROJ_CONFIG_FILE="$TEST_TMP/config.env"
-  mkdir -p "$NEW_PROJ_BASE_DIR" "$NEW_PROJ_TEMPLATES_DIR"
-  printf '%s\n' 'SCAFFOLD_DIR_NAME="scaffold"' >"$NEW_PROJ_CONFIG_FILE"
+  export QUICK_PROJ_BASE_DIR="$TEST_TMP/projects"
+  export QUICK_PROJ_TEMPLATES_DIR="$TEST_TMP/templates"
+  export QUICK_PROJ_CONFIG_FILE="$TEST_TMP/config.env"
+  mkdir -p "$QUICK_PROJ_BASE_DIR" "$QUICK_PROJ_TEMPLATES_DIR"
+  printf '%s\n' 'SCAFFOLD_DIR_NAME="scaffold"' >"$QUICK_PROJ_CONFIG_FILE"
 }
 
 seed_standard_templates() {
-  printf '%s\n' 'custom-agent-comms' >"$NEW_PROJ_TEMPLATES_DIR/AGENT-COMMS.md"
-  printf '%s\n' 'custom-agent-workflow' >"$NEW_PROJ_TEMPLATES_DIR/AGENT-WORKFLOW.md"
-  printf '%s\n' 'custom-agents-pointer' >"$NEW_PROJ_TEMPLATES_DIR/AGENTS.md"
-  printf '%s\n' 'custom-readme' >"$NEW_PROJ_TEMPLATES_DIR/README.md"
-  printf '%s\n' 'custom-arch-human' >"$NEW_PROJ_TEMPLATES_DIR/ARCH-HUMAN.md"
-  printf '%s\n' 'custom-arch-llm' >"$NEW_PROJ_TEMPLATES_DIR/ARCH-LLM.md"
-  printf '%s\n' 'custom-understanding' >"$NEW_PROJ_TEMPLATES_DIR/PROJECT-KNOWLEDGE.md"
-  printf '%s\n' 'node_modules/' >"$NEW_PROJ_TEMPLATES_DIR/.gitignore"
-  printf '%s\n' 'template-sz-marker' >"$NEW_PROJ_TEMPLATES_DIR/sz.py"
+  printf '%s\n' 'custom-agent-comms' >"$QUICK_PROJ_TEMPLATES_DIR/AGENT-COMMS.md"
+  printf '%s\n' 'custom-agent-workflow' >"$QUICK_PROJ_TEMPLATES_DIR/AGENT-WORKFLOW.md"
+  printf '%s\n' 'custom-agents-pointer' >"$QUICK_PROJ_TEMPLATES_DIR/AGENTS.md"
+  printf '%s\n' 'custom-readme' >"$QUICK_PROJ_TEMPLATES_DIR/README.md"
+  printf '%s\n' 'custom-arch-human' >"$QUICK_PROJ_TEMPLATES_DIR/ARCH-HUMAN.md"
+  printf '%s\n' 'custom-arch-llm' >"$QUICK_PROJ_TEMPLATES_DIR/ARCH-LLM.md"
+  printf '%s\n' 'custom-understanding' >"$QUICK_PROJ_TEMPLATES_DIR/PROJECT-KNOWLEDGE.md"
+  printf '%s\n' 'node_modules/' >"$QUICK_PROJ_TEMPLATES_DIR/.gitignore"
+  printf '%s\n' 'template-sz-marker' >"$QUICK_PROJ_TEMPLATES_DIR/sz.py"
 }
 
-teardown_new_proj_env() {
+teardown_quick_proj_env() {
   if [[ -n "${TEST_TMP:-}" && -d "$TEST_TMP" ]]; then
     rm -rf "$TEST_TMP"
   fi
-  unset TEST_TMP NEW_PROJ_BASE_DIR NEW_PROJ_TEMPLATES_DIR NEW_PROJ_CONFIG_FILE NEW_PROJ_SCAFFOLD_DIR_NAME
+  unset TEST_TMP QUICK_PROJ_BASE_DIR QUICK_PROJ_TEMPLATES_DIR QUICK_PROJ_CONFIG_FILE QUICK_PROJ_SCAFFOLD_DIR_NAME
 }
 
-run_new_proj() {
-  "$NEW_PROJ" "$@"
+run_quick_proj() {
+  "$QUICK_PROJ" "$@"
 }
 
 setup_install_home() {
