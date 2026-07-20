@@ -1,6 +1,6 @@
 # quick-proj shell integration — source from ~/.zshrc or ~/.bashrc
 quick-proj() {
-  local bin="${QUICK_PROJ_BIN:-${NEW_PROJ_BIN:-$HOME/.local/bin/quick-proj}}"
+  local bin="${QUICK_PROJ_BIN:-$HOME/.local/bin/quick-proj}"
   case " $* " in
     *' --agent-version '*|*' --update '*|*' --existing '*|*' -h '*|*' --help '*)
       "$bin" "$@"

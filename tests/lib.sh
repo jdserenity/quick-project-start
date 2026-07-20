@@ -127,9 +127,17 @@ seed_standard_templates() {
   printf '%s\n' 'custom-readme' >"$QUICK_PROJ_TEMPLATES_DIR/README.md"
   printf '%s\n' 'custom-arch-human' >"$QUICK_PROJ_TEMPLATES_DIR/ARCH-HUMAN.md"
   printf '%s\n' 'custom-arch-llm' >"$QUICK_PROJ_TEMPLATES_DIR/ARCH-LLM.md"
-  printf '%s\n' 'custom-understanding' >"$QUICK_PROJ_TEMPLATES_DIR/PROJECT-KNOWLEDGE.md"
   printf '%s\n' 'node_modules/' >"$QUICK_PROJ_TEMPLATES_DIR/.gitignore"
   printf '%s\n' 'template-sz-marker' >"$QUICK_PROJ_TEMPLATES_DIR/sz.py"
+}
+
+# Copy entrypoint + lib/ so a staged binary can source modules (sibling lib/).
+stage_quick_proj() {
+  local dest_dir="$1"
+  mkdir -p "$dest_dir/lib"
+  cp "$QUICK_PROJ" "$dest_dir/quick-proj"
+  cp "$ROOT/lib/"*.sh "$dest_dir/lib/"
+  chmod +x "$dest_dir/quick-proj"
 }
 
 teardown_quick_proj_env() {

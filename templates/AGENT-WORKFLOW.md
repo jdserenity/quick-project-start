@@ -35,7 +35,7 @@
 A change is done only when:
 1. It does what we agreed it should do.
 2. Automated tests cover that behavior (new tests for new behavior; changed tests when behavior changes). Say which test file(s) or command proves it so anyone can rerun the same check.
-3. If facts changed for the product or system, scaffold/ARCH-LLM.md is updated (minimal deltas; no padding). Update scaffold/ARCH-HUMAN.md when the maintainer needs a readable summary. If you learned something worth keeping for the next session, scaffold/PROJECT-KNOWLEDGE.md is updated too.
+3. If facts changed for the product or system, scaffold/ARCH-LLM.md is updated (minimal deltas; no padding). Update scaffold/ARCH-HUMAN.md when the maintainer needs a readable summary.
 4. Work is committed in small logical commits — not left uncommitted, not batched into one mega-commit at the end. Each commit should be one coherent unit you can describe in one short message.
 How to pick test type (project default):
 1. Unit: small pieces of logic with no real database or network.
@@ -43,4 +43,4 @@ How to pick test type (project default):
 3. Browser (e2e): only for stable end-to-end flows; avoid writing a dozen e2e tests while screens are still moving daily.
 
 
-scaffold version: 2.3.0
+scaffold version: 2.4.0

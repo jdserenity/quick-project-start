@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
+# quick-proj — create or refresh a coding-project scaffold.
+#
+# Layout (this file is the entrypoint only):
+#   lib/config.sh    — config paths, scaffold dir name, project-root discovery, docs→scaffold
+#   lib/version.sh   — --agent-version
+#   lib/agents.sh    — copy/seed AGENT-COMMS.md + AGENT-WORKFLOW.md
+#   lib/scaffold.sh  — create/--existing file layout
+#   lib/update.sh    — --update
+#   lib/git.sh       — optional git + GitHub
+#
+# Install copies this script to ~/.local/bin/quick-proj and lib/ to
+# ~/.local/share/quick-proj/lib/. From a repo checkout, lib/ sits next to this file.
 set -euo pipefail
 
 usage() {
@@ -8,10 +20,38 @@ usage() {
   echo "       quick-proj --agent-version   # print this project's scaffold version and the latest"
 }
 
-EMBEDDED_SCAFFOLD_VERSION=2.3.0
+# --- constants ---
+EMBEDDED_SCAFFOLD_VERSION=2.4.0
 SCAFFOLD_AGENT_FILES=(AGENT-COMMS.md AGENT-WORKFLOW.md)
-SCAFFOLD_DOC_FILES=(ARCH-HUMAN.md ARCH-LLM.md PROJECT-KNOWLEDGE.md)
+SCAFFOLD_DOC_FILES=(ARCH-HUMAN.md ARCH-LLM.md)
 
+# --- locate and load lib/ ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+resolve_lib_dir() {
+  if [[ -d "$SCRIPT_DIR/lib" ]]; then
+    printf '%s\n' "$SCRIPT_DIR/lib"
+  elif [[ -d "$HOME/.local/share/quick-proj/lib" ]]; then
+    printf '%s\n' "$HOME/.local/share/quick-proj/lib"
+  else
+    echo "Error: quick-proj library not found (expected $SCRIPT_DIR/lib or ~/.local/share/quick-proj/lib)." >&2
+    return 1
+  fi
+}
+LIB_DIR="$(resolve_lib_dir)" || exit 1
+# shellcheck source=/dev/null
+source "$LIB_DIR/config.sh"
+# shellcheck source=/dev/null
+source "$LIB_DIR/version.sh"
+# shellcheck source=/dev/null
+source "$LIB_DIR/agents.sh"
+# shellcheck source=/dev/null
+source "$LIB_DIR/scaffold.sh"
+# shellcheck source=/dev/null
+source "$LIB_DIR/update.sh"
+# shellcheck source=/dev/null
+source "$LIB_DIR/git.sh"
+
+# --- parse args ---
 no_repo=0
 existing=0
 update=0
@@ -20,30 +60,12 @@ project_name=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --no-repo)
-      no_repo=1
-      shift
-      ;;
-    --existing)
-      existing=1
-      shift
-      ;;
-    --update)
-      update=1
-      shift
-      ;;
-    --agent-version)
-      agent_version=1
-      shift
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
-    --)
-      shift
-      break
-      ;;
+    --no-repo) no_repo=1; shift ;;
+    --existing) existing=1; shift ;;
+    --update) update=1; shift ;;
+    --agent-version) agent_version=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    --) shift; break ;;
     -*)
       echo "Error: unknown option: $1" >&2
       usage >&2
@@ -88,296 +110,9 @@ if [[ -n "$project_name" && "$project_name" == */* ]]; then
   exit 1
 fi
 
-config_dir="$HOME/.config/quick-proj"
-if [[ ! -d "$config_dir" && -d "$HOME/.config/new-proj" ]]; then
-  config_dir="$HOME/.config/new-proj"
-fi
-bundled_dir="$config_dir/bundled"
-config_file="${QUICK_PROJ_CONFIG_FILE:-${NEW_PROJ_CONFIG_FILE:-$config_dir/config.env}}"
-
-read_config_scaffold_dir_name() {
-  local name="scaffold"
-  if [[ -f "$config_file" ]]; then
-    # shellcheck disable=SC1090
-    . "$config_file"
-    name="${QUICK_PROJ_SCAFFOLD_DIR_NAME:-${NEW_PROJ_SCAFFOLD_DIR_NAME:-${SCAFFOLD_DIR_NAME:-scaffold}}}"
-  fi
-  if [[ -z "$name" || "$name" == */* ]]; then
-    return 1
-  fi
-  printf '%s\n' "$name"
-}
-
-find_project_root() {
-  local start="$1" scaffold_name root=""
-  scaffold_name="$(read_config_scaffold_dir_name)" || {
-    echo "Error: invalid scaffold folder name in config." >&2
-    return 1
-  }
-  if command -v git >/dev/null 2>&1 && git -C "$start" rev-parse --show-toplevel >/dev/null 2>&1; then
-    root="$(git -C "$start" rev-parse --show-toplevel)"
-  else
-    local cur="$start"
-    while [[ "$cur" != "/" ]]; do
-      if [[ -f "$cur/$scaffold_name/AGENT-WORKFLOW.md" || -f "$cur/AGENTS.md" ]]; then
-        root="$cur"
-        break
-      fi
-      cur="$(dirname "$cur")"
-    done
-  fi
-  if [[ -z "$root" ]]; then
-    echo "Error: could not find project root (not in a git repository and no scaffold/AGENT-WORKFLOW.md or AGENTS.md above current directory)." >&2
-    return 1
-  fi
-  (cd "$root" && pwd -P)
-}
-
-resolve_latest_workflow_path() {
-  local script_dir templates_workflow
-  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  if [[ -f "$script_dir/scaffold/AGENT-WORKFLOW.md" ]]; then
-    printf '%s\n' "$script_dir/scaffold/AGENT-WORKFLOW.md"
-    return 0
-  fi
-  if [[ -f "$bundled_dir/AGENT-WORKFLOW.md" ]]; then
-    printf '%s\n' "$bundled_dir/AGENT-WORKFLOW.md"
-    return 0
-  fi
-  templates_workflow="$config_dir/templates/AGENT-WORKFLOW.md"
-  if [[ -f "$templates_workflow" && -s "$templates_workflow" ]]; then
-    printf '%s\n' "$templates_workflow"
-    return 0
-  fi
-  return 1
-}
-
-read_agents_last_line() {
-  local file="$1"
-  awk 'NF { last = $0 } END { print last }' "$file"
-}
-
-read_scaffold_version_from_file() {
-  local file="$1"
-  local line
-  if [[ ! -f "$file" ]]; then
-    return 1
-  fi
-  line="$(read_agents_last_line "$file")"
-  if [[ "$line" =~ ^scaffold\ version:\ ([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-    printf '%s\n' "${BASH_REMATCH[1]}"
-    return 0
-  fi
-  if [[ "$line" =~ ^AGENTS\.md\ version:\ ([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-    printf '%s\n' "${BASH_REMATCH[1]}"
-    return 0
-  fi
-  return 1
-}
-
-latest_scaffold_version() {
-  local path version
-  if path="$(resolve_latest_workflow_path)"; then
-    if version="$(read_scaffold_version_from_file "$path")"; then
-      printf '%s\n' "$version"
-      return 0
-    fi
-  fi
-  printf '%s\n' "$EMBEDDED_SCAFFOLD_VERSION"
-}
-
-write_embedded_scaffold_agent_files() {
-  local dest_dir="$1"
-  mkdir -p "$dest_dir"
-  cat <<'EOF' >"$dest_dir/AGENT-COMMS.md"
-# Documentation layout
-- Project documentation lives under scaffold/: scaffold/ARCH-HUMAN.md, scaffold/ARCH-LLM.md, scaffold/PROJECT-KNOWLEDGE.md, and scaffold/skills/.
-- One home per fact: if you are going to record something in one file, do not record it in another.
-
-# Communication with the maintainer
-The maintainer is still leveling up as an engineer. Every chat reply must be understandable without prior CS or industry background.
-
-- Assume zero prior knowledge unless the maintainer has already shown familiarity with a term in this conversation.
-- Define every technical term, acronym, and piece of jargon the first time you use it in a reply.
-- Do not move long explainers into scaffold/ARCH-HUMAN.md — teach in chat unless the maintainer explicitly asks for an explanation in the repo.
-EOF
-  cat <<EOF >"$dest_dir/AGENT-WORKFLOW.md"
-# Code style
-- Indentation: 2 spaces everywhere (Python and TypeScript).
-
-# Commit Rules
-- Create commits without being asked — that is normal on this project. Only push when the user explicitly asks.
-
-# Definition of done
-1. It does what we agreed it should do.
-2. Automated tests cover that behavior.
-3. scaffold/ARCH-LLM.md and scaffold/PROJECT-KNOWLEDGE.md updated when facts or lessons change.
-4. Work is committed in small logical commits — not left uncommitted, not batched at the end.
-
-scaffold version: $EMBEDDED_SCAFFOLD_VERSION
-EOF
-}
-
-write_scaffold_agent_files_to() {
-  local dest_dir="$1"
-  local primary_src="${2:-}"
-  local script_dir workflow_src comms_src
-  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  mkdir -p "$dest_dir"
-  if [[ -n "$primary_src" && -f "$primary_src/AGENT-WORKFLOW.md" && -f "$primary_src/AGENT-COMMS.md" ]]; then
-    cp "$primary_src/AGENT-COMMS.md" "$dest_dir/AGENT-COMMS.md"
-    cp "$primary_src/AGENT-WORKFLOW.md" "$dest_dir/AGENT-WORKFLOW.md"
-    return 0
-  fi
-  for workflow_src in \
-    "$script_dir/scaffold/AGENT-WORKFLOW.md" \
-    "$bundled_dir/AGENT-WORKFLOW.md" \
-    "$config_dir/templates/AGENT-WORKFLOW.md"; do
-    comms_src="${workflow_src%/AGENT-WORKFLOW.md}/AGENT-COMMS.md"
-    if [[ -f "$workflow_src" && -f "$comms_src" ]]; then
-      cp "$comms_src" "$dest_dir/AGENT-COMMS.md"
-      cp "$workflow_src" "$dest_dir/AGENT-WORKFLOW.md"
-      return 0
-    fi
-  done
-  write_embedded_scaffold_agent_files "$dest_dir"
-}
-
-project_workflow_file() {
-  local project_dir="$1" scaffold_name
-  scaffold_name="$(read_config_scaffold_dir_name)" || return 1
-  if [[ -f "$project_dir/$scaffold_name/AGENT-WORKFLOW.md" ]]; then
-    printf '%s\n' "$project_dir/$scaffold_name/AGENT-WORKFLOW.md"
-    return 0
-  fi
-  if [[ -f "$project_dir/AGENTS.md" ]]; then
-    printf '%s\n' "$project_dir/AGENTS.md"
-    return 0
-  fi
-  return 1
-}
-
-copy_scaffold_scripts() {
-  local project_dir="$1" skip_existing="$2" announce="$3"
-  local file_name template_file target_file
-  for file_name in sz.py; do
-    template_file="$templates_dir/$file_name"
-    target_file="$project_dir/scripts/$file_name"
-    [[ -f "$template_file" ]] || continue
-    if [[ "$skip_existing" -eq 1 && -f "$target_file" ]]; then continue; fi
-    mkdir -p "$project_dir/scripts"
-    cp "$template_file" "$target_file"
-    if [[ "$announce" -eq 1 ]]; then echo "Added: scripts/$file_name" >&2; fi
-  done
-}
-
-ensure_gitignore_template() {
-  local gitignore_template="$1"
-  if [[ ! -f "$gitignore_template" ]]; then
-    cat <<'EOF' > "$gitignore_template"
-# OS files
-.DS_Store
-
-# Environment files
-.env
-.env.*
-!.env.example
-
-# JavaScript / TypeScript
-node_modules/
-dist/
-build/
-coverage/
-
-# Python
-.venv/
-__pycache__/
-*.pyc
-EOF
-  fi
-}
-
-load_scaffold_config() {
-  if [[ -f "$config_file" ]]; then
-    # shellcheck disable=SC1090
-    . "$config_file"
-  fi
-  scaffold_dir_name="${QUICK_PROJ_SCAFFOLD_DIR_NAME:-${NEW_PROJ_SCAFFOLD_DIR_NAME:-${SCAFFOLD_DIR_NAME:-scaffold}}}"
-  templates_dir="${QUICK_PROJ_TEMPLATES_DIR:-${NEW_PROJ_TEMPLATES_DIR:-${TEMPLATES_DIR:-$config_dir/templates}}}"
-  if [[ -z "$scaffold_dir_name" || "$scaffold_dir_name" == */* ]]; then
-    echo "Error: scaffold folder name must be a single directory name." >&2
-    return 1
-  fi
-}
-
-run_project_update() {
-  local project_dir scaffold_dir file_name template_file target_file gitignore_template gitignore_target
-  project_dir="$(find_project_root "$(pwd)")"
-  load_scaffold_config || exit 1
-  scaffold_dir="$project_dir/$scaffold_dir_name"
-
-  mkdir -p "$templates_dir" "$scaffold_dir" "$scaffold_dir/skills"
-
-  for file_name in "${SCAFFOLD_AGENT_FILES[@]}" "${SCAFFOLD_DOC_FILES[@]}" README.md; do
-    template_file="$templates_dir/$file_name"
-    if [[ ! -f "$template_file" ]]; then
-      if [[ " ${SCAFFOLD_AGENT_FILES[*]} " == *" $file_name "* ]]; then
-        write_scaffold_agent_files_to "$templates_dir"
-      else
-        : >"$template_file"
-      fi
-    fi
-  done
-
-  write_scaffold_agent_files_to "$scaffold_dir"
-  echo "Updated scaffold agent files" >&2
-
-  agents_template="$templates_dir/AGENTS.md"
-  if [[ ! -f "$agents_template" ]]; then : >"$agents_template"; fi
-  cp "$agents_template" "$project_dir/AGENTS.md"
-  echo "Updated AGENTS.md" >&2
-
-  for file_name in README.md "${SCAFFOLD_DOC_FILES[@]}"; do
-    template_file="$templates_dir/$file_name"
-    if [[ "$file_name" == "README.md" ]]; then target_file="$project_dir/$file_name"
-    else target_file="$scaffold_dir/$file_name"; fi
-    if [[ -f "$target_file" ]]; then continue; fi
-    cp "$template_file" "$target_file"
-    echo "Added: ${target_file#$project_dir/}" >&2
-  done
-
-  gitignore_template="$templates_dir/.gitignore"
-  gitignore_target="$project_dir/.gitignore"
-  ensure_gitignore_template "$gitignore_template"
-  if [[ ! -f "$gitignore_target" ]]; then
-    cp "$gitignore_template" "$gitignore_target"
-    echo "Added: .gitignore" >&2
-  fi
-
-  copy_scaffold_scripts "$project_dir" 1 1
-
-  echo "Updated scaffold in: $project_dir" >&2
-}
-
+# --- dispatch ---
 if [[ "$agent_version" -eq 1 ]]; then
-  project_dir="$(find_project_root "$(pwd)")"
-  latest_ver="$(latest_scaffold_version)"
-  project_file=""
-  if project_file="$(project_workflow_file "$project_dir")"; then :; else
-    echo "project: (missing scaffold/AGENT-WORKFLOW.md)" >&2
-    echo "latest: scaffold version: $latest_ver" >&2
-    exit 1
-  fi
-  if project_ver="$(read_scaffold_version_from_file "$project_file")"; then
-    echo "project: scaffold version: $project_ver" >&2
-  else
-    echo "project: (no version — last line: $(read_agents_last_line "$project_file"))" >&2
-  fi
-  echo "latest: scaffold version: $latest_ver" >&2
-  if [[ -n "${project_ver:-}" && "$project_ver" == "$latest_ver" ]]; then
-    exit 0
-  fi
-  exit 1
+  run_agent_version
 fi
 
 if [[ "$update" -eq 1 ]]; then
@@ -385,18 +120,7 @@ if [[ "$update" -eq 1 ]]; then
   exit 0
 fi
 
-if [[ -f "$config_file" ]]; then
-  # shellcheck disable=SC1090
-  . "$config_file"
-fi
-
-scaffold_dir_name="${QUICK_PROJ_SCAFFOLD_DIR_NAME:-${NEW_PROJ_SCAFFOLD_DIR_NAME:-${SCAFFOLD_DIR_NAME:-scaffold}}}"
-templates_dir="${QUICK_PROJ_TEMPLATES_DIR:-${NEW_PROJ_TEMPLATES_DIR:-${TEMPLATES_DIR:-$config_dir/templates}}}"
-
-if [[ -z "$scaffold_dir_name" || "$scaffold_dir_name" == */* ]]; then
-  echo "Error: scaffold folder name must be a single directory name." >&2
-  exit 1
-fi
+load_scaffold_config || exit 1
 
 if [[ "$existing" -eq 1 ]]; then
   project_dir="$(pwd)"
@@ -404,19 +128,8 @@ if [[ "$existing" -eq 1 ]]; then
     project_name="$(basename "$project_dir")"
   fi
 else
-  base_dir="${QUICK_PROJ_BASE_DIR:-${NEW_PROJ_BASE_DIR:-${BASE_DIR:-$HOME/Documents/coding-temp}}}"
+  base_dir="${QUICK_PROJ_BASE_DIR:-${BASE_DIR:-$HOME/Documents/coding-temp}}"
   project_dir="$base_dir/$project_name"
-fi
-
-scaffold_dir="$project_dir/$scaffold_dir_name"
-
-root_files=(README.md AGENTS.md)
-
-seed_scaffold_agent_template() {
-  write_scaffold_agent_files_to "$1"
-}
-
-if [[ "$existing" -eq 0 ]]; then
   if [[ ! -d "$base_dir" ]]; then
     echo "Error: base directory does not exist: $base_dir" >&2
     exit 1
@@ -428,129 +141,7 @@ if [[ "$existing" -eq 0 ]]; then
   mkdir -p "$project_dir"
 fi
 
-mkdir -p "$templates_dir"
-mkdir -p "$scaffold_dir"
-
-for file_name in "${root_files[@]}"; do
-  template_file="$templates_dir/$file_name"
-  target_file="$project_dir/$file_name"
-  if [[ ! -f "$template_file" ]]; then : >"$template_file"; fi
-  if [[ "$existing" -eq 1 && -f "$target_file" ]]; then
-    case "$file_name" in
-      README.md|AGENTS.md) continue ;;
-    esac
-  fi
-  cp "$template_file" "$target_file"
-done
-
-if [[ ! -f "$templates_dir/AGENT-WORKFLOW.md" || ! -s "$templates_dir/AGENT-WORKFLOW.md" ]]; then
-  seed_scaffold_agent_template "$templates_dir"
-fi
-for file_name in "${SCAFFOLD_DOC_FILES[@]}"; do
-  template_file="$templates_dir/$file_name"
-  if [[ ! -f "$template_file" ]]; then : >"$template_file"; fi
-done
-
-agent_skip=0
-if [[ "$existing" -eq 1 && -f "$scaffold_dir/AGENT-COMMS.md" && -f "$scaffold_dir/AGENT-WORKFLOW.md" ]]; then
-  agent_skip=1
-fi
-if [[ "$agent_skip" -eq 0 ]]; then
-  write_scaffold_agent_files_to "$scaffold_dir" "$templates_dir"
-fi
-
-for file_name in "${SCAFFOLD_DOC_FILES[@]}"; do
-  template_file="$templates_dir/$file_name"
-  target_file="$scaffold_dir/$file_name"
-  if [[ "$existing" -eq 1 && -f "$target_file" && "$file_name" == "PROJECT-KNOWLEDGE.md" ]]; then continue; fi
-  cp "$template_file" "$target_file"
-done
-
-copy_scaffold_scripts "$project_dir" 0 0
-
-mkdir -p "$scaffold_dir/skills"
-
-gitignore_template="$templates_dir/.gitignore"
-gitignore_target="$project_dir/.gitignore"
-
-ensure_gitignore_template "$gitignore_template"
-
-if [[ "$existing" -eq 0 || ! -f "$gitignore_target" ]]; then
-  cp "$gitignore_template" "$gitignore_target"
-fi
-
-push_to_origin_if_needed() {
-  local branch
-  branch="$(git -C "$project_dir" branch --show-current 2>/dev/null || true)"
-  [[ -z "$branch" ]] && return 0
-  echo "Pushing to origin ($branch)..." >&2
-  if git -C "$project_dir" push -u origin "$branch" >/dev/null 2>&1; then
-    echo "Push complete." >&2
-  elif git -C "$project_dir" push origin "$branch" >/dev/null 2>&1; then
-    echo "Push complete." >&2
-  else
-    echo "Warning: push to origin failed; commits are local." >&2
-  fi
-}
-
-setup_git_and_github() {
-  local repo_name="${project_name:-$(basename "$project_dir")}"
-  local commit_msg="init"
-  local repo_url
-
-  if ! command -v git >/dev/null 2>&1; then
-    echo "Warning: git is not installed; skipped git and GitHub setup." >&2
-    return 0
-  fi
-
-  if [[ ! -d "$project_dir/.git" ]]; then
-    echo "Initializing git repository..." >&2
-    git -C "$project_dir" init >/dev/null
-    git -C "$project_dir" branch -M main
-  elif git -C "$project_dir" rev-parse --verify HEAD >/dev/null 2>&1; then
-    commit_msg="Add scaffold"
-  fi
-
-  git -C "$project_dir" add -A
-  if ! git -C "$project_dir" diff --cached --quiet; then
-    echo "Committing: $commit_msg" >&2
-    git -C "$project_dir" commit -m "$commit_msg" >/dev/null
-  fi
-
-  if git -C "$project_dir" remote get-url origin >/dev/null 2>&1; then
-    echo "Remote origin already set; skipping GitHub repo create." >&2
-    push_to_origin_if_needed
-    return 0
-  fi
-
-  if ! command -v gh >/dev/null 2>&1; then
-    echo "Warning: GitHub CLI (gh) is not installed; skipped remote repo creation." >&2
-    return 0
-  fi
-
-  if ! gh auth status >/dev/null 2>&1; then
-    echo "Warning: gh is not authenticated; skipped remote repo creation." >&2
-    return 0
-  fi
-
-  if gh repo view "$repo_name" >/dev/null 2>&1; then
-    repo_url="$(gh repo view "$repo_name" --json url -q .url)"
-    echo "GitHub repo $repo_name already exists; linking origin and pushing." >&2
-    git -C "$project_dir" remote add origin "$repo_url"
-    push_to_origin_if_needed
-    return 0
-  fi
-
-  echo "Creating GitHub repo $repo_name and pushing..." >&2
-  if ! (
-    cd "$project_dir"
-    gh repo create "$repo_name" --source=. --public --push
-  ); then
-    echo "Warning: failed to create or push GitHub repo; local git repo is ready." >&2
-  else
-    echo "GitHub repo created and pushed." >&2
-  fi
-}
+scaffold_dir="$(apply_scaffold_to_project "$project_dir" "$existing")"
 
 if [[ "$existing" -eq 1 ]]; then
   echo "Inserted scaffold into: $project_dir" >&2
@@ -561,7 +152,7 @@ echo "Scaffold folder: $scaffold_dir" >&2
 echo "Templates folder: $templates_dir" >&2
 
 if [[ "$no_repo" -eq 0 ]]; then
-  setup_git_and_github
+  setup_git_and_github "$project_dir" "$project_name"
 fi
 
 if [[ "$existing" -eq 0 ]]; then

@@ -6,7 +6,7 @@ Versioned source for the global `quick-proj` command.
 
 - Keep this in a GitHub repo.
 - Run `./install.sh` after each pull — it syncs templates so new projects get the latest policy.
-- The installer copies `quick-proj` into `~/.local/bin/quick-proj`.
+- The installer copies `quick-proj` into `~/.local/bin/quick-proj` and `lib/` into `~/.local/share/quick-proj/lib/`.
 - You can delete this clone anytime; installed command keeps working.
 
 ## Install / update
@@ -22,7 +22,7 @@ git pull
 ./install.sh
 ```
 
-`install.sh` refreshes the binary, bundled scaffold agent files, and all files under `~/.config/quick-proj/templates/` from this repo (including `sz.py`). Upgrading from `new-proj` migrates `~/.config/new-proj`, removes `~/.local/bin/new-proj`, and updates shell integration in `~/.zshrc` when present.
+`install.sh` refreshes the binary, lib modules, bundled scaffold agent files, and all files under `~/.config/quick-proj/templates/` from this repo (including `sz.py`). If `config.env` still has `SCAFFOLD_DIR_NAME="docs"`, install rewrites it to `"scaffold"`.
 
 ## Usage
 
@@ -33,7 +33,7 @@ cd /path/to/existing-project
 quick-proj --existing                # add scaffold/ here; git + GitHub unless --no-repo; no cd
 quick-proj --existing --no-repo      # scaffold only; skip git/GitHub
 cd /path/to/existing-project
-quick-proj --update                  # refresh scaffold agent files and add missing scaffold files; no deletions
+quick-proj --update                  # refresh scaffold agent files; migrate docs/→scaffold/ if needed; add missing files
 quick-proj --agent-version           # show this project's scaffold version vs latest (exit 1 if behind)
 ```
 
@@ -51,7 +51,6 @@ Creates:
   - `AGENT-WORKFLOW.md` — how agents work (includes `scaffold version: X.Y.Z`)
   - `ARCH-HUMAN.md` — architecture for humans
   - `ARCH-LLM.md` — architecture for agents
-  - `PROJECT-KNOWLEDGE.md` — hard-won lessons
   - `skills/` (empty folder)
 
 Requires `git` and [GitHub CLI](https://cli.github.com/) (`gh`) logged in (`gh auth login`). If either is missing or `gh repo create` fails, the local project is still created and you get a warning.
@@ -70,7 +69,7 @@ Global templates (refreshed on every `./install.sh`):
 
 - `~/.config/quick-proj/templates/`
   - `AGENT-COMMS.md`, `AGENT-WORKFLOW.md`
-  - `ARCH-HUMAN.md`, `ARCH-LLM.md`, `PROJECT-KNOWLEDGE.md`
+  - `ARCH-HUMAN.md`, `ARCH-LLM.md`
   - `AGENTS.md` (root pointer to scaffold/)
   - `README.md`
   - `.gitignore`
@@ -81,8 +80,6 @@ Per-run overrides:
 - `QUICK_PROJ_BASE_DIR="/some/path" quick-proj "my-project"`
 - `QUICK_PROJ_SCAFFOLD_DIR_NAME="blueprint" quick-proj "my-project"`
 - `QUICK_PROJ_TEMPLATES_DIR="/some/path" quick-proj "my-project"`
-
-Legacy `NEW_PROJ_*` environment variable names still work.
 
 ## Tests
 

@@ -1,61 +1,35 @@
 #!/usr/bin/env bash
+# Install quick-proj into ~/.local/bin and sync templates + lib modules.
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source_script="$script_dir/quick-proj"
+source_lib_dir="$script_dir/lib"
 target_dir="$HOME/.local/bin"
 target_script="$target_dir/quick-proj"
-legacy_binary="$target_dir/new-proj"
+share_dir="$HOME/.local/share/quick-proj"
+target_lib_dir="$share_dir/lib"
 
 config_dir="$HOME/.config/quick-proj"
-legacy_config_dir="$HOME/.config/new-proj"
 config_file="$config_dir/config.env"
 templates_dir="$config_dir/templates"
 repo_templates_dir="$script_dir/templates"
 repo_scaffold_dir="$script_dir/scaffold"
 
-legacy_shell_marker="# new-proj shell integration (install.sh)"
 shell_integration_marker="# quick-proj shell integration (install.sh)"
-
-migrate_legacy_config() {
-  if [[ -d "$legacy_config_dir" && ! -e "$config_dir" ]]; then
-    mv "$legacy_config_dir" "$config_dir"
-    echo "Migrated config: $legacy_config_dir → $config_dir"
-  fi
-}
-
-migrate_legacy_zshrc() {
-  local zshrc="$HOME/.zshrc"
-  [[ -f "$zshrc" ]] || return 0
-  if grep -qF "$legacy_shell_marker" "$zshrc" || grep -qF 'new-proj/shell-integration.zsh' "$zshrc"; then
-    if [[ "$(uname)" == "Darwin" ]]; then
-      sed -i '' \
-        -e "s|$legacy_shell_marker|$shell_integration_marker|g" \
-        -e 's|\.config/new-proj/|\.config/quick-proj/|g' \
-        -e 's|/new-proj/shell-integration|/quick-proj/shell-integration|g' \
-        "$zshrc"
-    else
-      sed -i \
-        -e "s|$legacy_shell_marker|$shell_integration_marker|g" \
-        -e 's|\.config/new-proj/|\.config/quick-proj/|g' \
-        -e 's|/new-proj/shell-integration|/quick-proj/shell-integration|g' \
-        "$zshrc"
-    fi
-    echo "Shell integration: upgraded ~/.zshrc from new-proj to quick-proj"
-  fi
-}
 
 if [[ ! -f "$source_script" ]]; then
   echo "Error: could not find source script at $source_script" >&2
   exit 1
 fi
+if [[ ! -d "$source_lib_dir" ]]; then
+  echo "Error: could not find lib directory at $source_lib_dir" >&2
+  exit 1
+fi
 
-migrate_legacy_config
-migrate_legacy_zshrc
-rm -f "$legacy_binary"
-
-mkdir -p "$target_dir"
+mkdir -p "$target_dir" "$target_lib_dir"
 install -m 0755 "$source_script" "$target_script"
+cp "$source_lib_dir/"*.sh "$target_lib_dir/"
 
 mkdir -p "$templates_dir"
 bundled_dir="$config_dir/bundled"
@@ -88,6 +62,16 @@ sync_managed_templates() {
 
 sync_managed_templates
 
+# If an old install still points at docs/, flip it to scaffold.
+if [[ -f "$config_file" ]] && grep -qE '^SCAFFOLD_DIR_NAME="docs"' "$config_file"; then
+  if [[ "$(uname)" == "Darwin" ]]; then
+    sed -i '' 's|^SCAFFOLD_DIR_NAME="docs"|SCAFFOLD_DIR_NAME="scaffold"|' "$config_file"
+  else
+    sed -i 's|^SCAFFOLD_DIR_NAME="docs"|SCAFFOLD_DIR_NAME="scaffold"|' "$config_file"
+  fi
+  echo "Config: SCAFFOLD_DIR_NAME docs → scaffold"
+fi
+
 if [[ ! -f "$config_file" ]]; then
   cat <<'EOF' >"$config_file"
 SCAFFOLD_DIR_NAME="scaffold"
@@ -107,12 +91,9 @@ install_shell_integration_zshrc() {
   if [[ ! -f "$integration_file" ]]; then
     return 0
   fi
-  # Fixed-string grep only (no zsh parsing). Skip append if marker or source line exists anywhere in the file.
   if [[ -f "$zshrc" ]] && {
     grep -qF "$shell_integration_marker" "$zshrc" ||
-      grep -qF 'quick-proj/shell-integration.zsh' "$zshrc" ||
-      grep -qF "$legacy_shell_marker" "$zshrc" ||
-      grep -qF 'new-proj/shell-integration.zsh' "$zshrc"
+      grep -qF 'quick-proj/shell-integration.zsh' "$zshrc"
   }; then
     echo "Shell integration: already in ~/.zshrc"
     return 0
@@ -129,6 +110,7 @@ install_shell_integration_zshrc() {
 }
 
 echo "Installed: $target_script"
+echo "Libraries: $target_lib_dir"
 echo "Config: $config_file"
 echo "Templates: $templates_dir (synced from repo)"
 if [[ -f "$shell_integration" ]]; then
