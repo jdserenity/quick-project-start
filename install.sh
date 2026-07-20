@@ -2,20 +2,57 @@
 set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source_script="$script_dir/new-proj"
+source_script="$script_dir/quick-proj"
 target_dir="$HOME/.local/bin"
-target_script="$target_dir/new-proj"
+target_script="$target_dir/quick-proj"
+legacy_binary="$target_dir/new-proj"
 
-config_dir="$HOME/.config/new-proj"
+config_dir="$HOME/.config/quick-proj"
+legacy_config_dir="$HOME/.config/new-proj"
 config_file="$config_dir/config.env"
 templates_dir="$config_dir/templates"
 repo_templates_dir="$script_dir/templates"
 repo_scaffold_dir="$script_dir/scaffold"
 
+legacy_shell_marker="# new-proj shell integration (install.sh)"
+shell_integration_marker="# quick-proj shell integration (install.sh)"
+
+migrate_legacy_config() {
+  if [[ -d "$legacy_config_dir" && ! -e "$config_dir" ]]; then
+    mv "$legacy_config_dir" "$config_dir"
+    echo "Migrated config: $legacy_config_dir → $config_dir"
+  fi
+}
+
+migrate_legacy_zshrc() {
+  local zshrc="$HOME/.zshrc"
+  [[ -f "$zshrc" ]] || return 0
+  if grep -qF "$legacy_shell_marker" "$zshrc" || grep -qF 'new-proj/shell-integration.zsh' "$zshrc"; then
+    if [[ "$(uname)" == "Darwin" ]]; then
+      sed -i '' \
+        -e "s|$legacy_shell_marker|$shell_integration_marker|g" \
+        -e 's|\.config/new-proj/|\.config/quick-proj/|g' \
+        -e 's|/new-proj/shell-integration|/quick-proj/shell-integration|g' \
+        "$zshrc"
+    else
+      sed -i \
+        -e "s|$legacy_shell_marker|$shell_integration_marker|g" \
+        -e 's|\.config/new-proj/|\.config/quick-proj/|g' \
+        -e 's|/new-proj/shell-integration|/quick-proj/shell-integration|g' \
+        "$zshrc"
+    fi
+    echo "Shell integration: upgraded ~/.zshrc from new-proj to quick-proj"
+  fi
+}
+
 if [[ ! -f "$source_script" ]]; then
   echo "Error: could not find source script at $source_script" >&2
   exit 1
 fi
+
+migrate_legacy_config
+migrate_legacy_zshrc
+rm -f "$legacy_binary"
 
 mkdir -p "$target_dir"
 install -m 0755 "$source_script" "$target_script"
@@ -58,7 +95,6 @@ EOF
 fi
 
 shell_integration="$config_dir/shell-integration.zsh"
-shell_integration_marker="# new-proj shell integration (install.sh)"
 if [[ -f "$script_dir/templates/shell-integration.zsh" ]]; then
   install -m 0644 "$script_dir/templates/shell-integration.zsh" "$shell_integration"
 else
@@ -74,6 +110,8 @@ install_shell_integration_zshrc() {
   # Fixed-string grep only (no zsh parsing). Skip append if marker or source line exists anywhere in the file.
   if [[ -f "$zshrc" ]] && {
     grep -qF "$shell_integration_marker" "$zshrc" ||
+    grep -qF 'quick-proj/shell-integration.zsh' "$zshrc" ||
+    grep -qF "$legacy_shell_marker" "$zshrc" ||
     grep -qF 'new-proj/shell-integration.zsh' "$zshrc"
   }; then
     echo "Shell integration: already in ~/.zshrc"
@@ -96,10 +134,10 @@ echo "Templates: $templates_dir (synced from repo)"
 if [[ -f "$shell_integration" ]]; then
   echo "Shell integration: $shell_integration"
   install_shell_integration_zshrc "$shell_integration"
-  echo "  Run: source ~/.zshrc   (or open a new terminal) so new-proj cds into new projects"
+  echo "  Run: source ~/.zshrc   (or open a new terminal) so quick-proj cds into new projects"
 fi
 
-if ! command -v new-proj >/dev/null 2>&1; then
-  echo 'Note: `new-proj` is not on PATH in this shell yet.'
+if ! command -v quick-proj >/dev/null 2>&1; then
+  echo 'Note: `quick-proj` is not on PATH in this shell yet.'
   echo 'Open a new terminal or run: source ~/.zshrc'
 fi

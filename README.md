@@ -1,12 +1,12 @@
-# new-proj CLI
+# quick-proj CLI
 
-Versioned source for the global `new-proj` command.
+Versioned source for the global `quick-proj` command.
 
 ## Why this setup
 
 - Keep this in a GitHub repo.
 - Run `./install.sh` after each pull — it syncs templates so new projects get the latest policy.
-- The installer copies `new-proj` into `~/.local/bin/new-proj`.
+- The installer copies `quick-proj` into `~/.local/bin/quick-proj`.
 - You can delete this clone anytime; installed command keeps working.
 
 ## Install / update
@@ -22,24 +22,24 @@ git pull
 ./install.sh
 ```
 
-`install.sh` refreshes the binary, bundled scaffold agent files, and all files under `~/.config/new-proj/templates/` from this repo (including `sz.py`).
+`install.sh` refreshes the binary, bundled scaffold agent files, and all files under `~/.config/quick-proj/templates/` from this repo (including `sz.py`). Upgrading from `new-proj` migrates `~/.config/new-proj`, removes `~/.local/bin/new-proj`, and updates shell integration in `~/.zshrc` when present.
 
 ## Usage
 
 ```bash
-new-proj "my-project"              # creates project; cd into it (with shell integration)
-new-proj --no-repo "my-project"    # files only; skip git init and GitHub; still cds
+quick-proj "my-project"              # creates project; cd into it (with shell integration)
+quick-proj --no-repo "my-project"    # files only; skip git init and GitHub; still cds
 cd /path/to/existing-project
-new-proj --existing                # add scaffold/ here; git + GitHub unless --no-repo; no cd
-new-proj --existing --no-repo      # scaffold only; skip git/GitHub
+quick-proj --existing                # add scaffold/ here; git + GitHub unless --no-repo; no cd
+quick-proj --existing --no-repo      # scaffold only; skip git/GitHub
 cd /path/to/existing-project
-new-proj --update                  # refresh scaffold agent files and add missing scaffold files; no deletions
-new-proj --agent-version           # show this project's scaffold version vs latest (exit 1 if behind)
+quick-proj --update                  # refresh scaffold agent files and add missing scaffold files; no deletions
+quick-proj --agent-version           # show this project's scaffold version vs latest (exit 1 if behind)
 ```
 
-`./install.sh` adds shell integration to `~/.zshrc` (once). Run `source ~/.zshrc` or open a new terminal so `new-proj` can change directory in your shell.
+`./install.sh` adds shell integration to `~/.zshrc` (once). Run `source ~/.zshrc` or open a new terminal so `quick-proj` can change directory in your shell.
 
-Without integration loaded, the command only prints a `cd` line; run `eval "$(new-proj "my-project" 2>/dev/null)"` instead.
+Without integration loaded, the command only prints a `cd` line; run `eval "$(quick-proj "my-project" 2>/dev/null)"` instead.
 
 Creates:
 
@@ -60,7 +60,7 @@ Requires `git` and [GitHub CLI](https://cli.github.com/) (`gh`) logged in (`gh a
 
 Global runtime config:
 
-- `~/.config/new-proj/config.env`
+- `~/.config/quick-proj/config.env`
   - `SCAFFOLD_DIR_NAME="scaffold"`
   - optional: `BASE_DIR="/some/path"`
   - optional: `TEMPLATES_DIR="/some/path"`
@@ -68,7 +68,7 @@ Global runtime config:
 
 Global templates (refreshed on every `./install.sh`):
 
-- `~/.config/new-proj/templates/`
+- `~/.config/quick-proj/templates/`
   - `AGENT-COMMS.md`, `AGENT-WORKFLOW.md`
   - `ARCH-HUMAN.md`, `ARCH-LLM.md`, `PROJECT-KNOWLEDGE.md`
   - `AGENTS.md` (root pointer to scaffold/)
@@ -78,9 +78,11 @@ Global templates (refreshed on every `./install.sh`):
 
 Per-run overrides:
 
-- `NEW_PROJ_BASE_DIR="/some/path" new-proj "my-project"`
-- `NEW_PROJ_SCAFFOLD_DIR_NAME="blueprint" new-proj "my-project"`
-- `NEW_PROJ_TEMPLATES_DIR="/some/path" new-proj "my-project"`
+- `QUICK_PROJ_BASE_DIR="/some/path" quick-proj "my-project"`
+- `QUICK_PROJ_SCAFFOLD_DIR_NAME="blueprint" quick-proj "my-project"`
+- `QUICK_PROJ_TEMPLATES_DIR="/some/path" quick-proj "my-project"`
+
+Legacy `NEW_PROJ_*` environment variable names still work.
 
 ## Tests
 

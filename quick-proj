@@ -2,13 +2,13 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: new-proj [--no-repo] [--existing] \"project-name\""
-  echo "       new-proj --existing   # scaffold into current directory"
-  echo "       new-proj --update   # refresh scaffold agent files and add missing scaffold files"
-  echo "       new-proj --agent-version   # print this project's scaffold version and the latest"
+  echo "Usage: quick-proj [--no-repo] [--existing] \"project-name\""
+  echo "       quick-proj --existing   # scaffold into current directory"
+  echo "       quick-proj --update   # refresh scaffold agent files and add missing scaffold files"
+  echo "       quick-proj --agent-version   # print this project's scaffold version and the latest"
 }
 
-EMBEDDED_SCAFFOLD_VERSION=2.2.0
+EMBEDDED_SCAFFOLD_VERSION=2.3.0
 SCAFFOLD_AGENT_FILES=(AGENT-COMMS.md AGENT-WORKFLOW.md)
 SCAFFOLD_DOC_FILES=(ARCH-HUMAN.md ARCH-LLM.md PROJECT-KNOWLEDGE.md)
 
@@ -88,16 +88,19 @@ if [[ -n "$project_name" && "$project_name" == */* ]]; then
   exit 1
 fi
 
-config_dir="$HOME/.config/new-proj"
+config_dir="$HOME/.config/quick-proj"
+if [[ ! -d "$config_dir" && -d "$HOME/.config/new-proj" ]]; then
+  config_dir="$HOME/.config/new-proj"
+fi
 bundled_dir="$config_dir/bundled"
-config_file="${NEW_PROJ_CONFIG_FILE:-$config_dir/config.env}"
+config_file="${QUICK_PROJ_CONFIG_FILE:-${NEW_PROJ_CONFIG_FILE:-$config_dir/config.env}}"
 
 read_config_scaffold_dir_name() {
   local name="scaffold"
   if [[ -f "$config_file" ]]; then
     # shellcheck disable=SC1090
     . "$config_file"
-    name="${NEW_PROJ_SCAFFOLD_DIR_NAME:-${SCAFFOLD_DIR_NAME:-scaffold}}"
+    name="${QUICK_PROJ_SCAFFOLD_DIR_NAME:-${NEW_PROJ_SCAFFOLD_DIR_NAME:-${SCAFFOLD_DIR_NAME:-scaffold}}}"
   fi
   if [[ -z "$name" || "$name" == */* ]]; then
     return 1
@@ -299,8 +302,8 @@ load_scaffold_config() {
     # shellcheck disable=SC1090
     . "$config_file"
   fi
-  scaffold_dir_name="${NEW_PROJ_SCAFFOLD_DIR_NAME:-${SCAFFOLD_DIR_NAME:-scaffold}}"
-  templates_dir="${NEW_PROJ_TEMPLATES_DIR:-${TEMPLATES_DIR:-$config_dir/templates}}"
+  scaffold_dir_name="${QUICK_PROJ_SCAFFOLD_DIR_NAME:-${NEW_PROJ_SCAFFOLD_DIR_NAME:-${SCAFFOLD_DIR_NAME:-scaffold}}}"
+  templates_dir="${QUICK_PROJ_TEMPLATES_DIR:-${NEW_PROJ_TEMPLATES_DIR:-${TEMPLATES_DIR:-$config_dir/templates}}}"
   if [[ -z "$scaffold_dir_name" || "$scaffold_dir_name" == */* ]]; then
     echo "Error: scaffold folder name must be a single directory name." >&2
     return 1
@@ -387,8 +390,8 @@ if [[ -f "$config_file" ]]; then
   . "$config_file"
 fi
 
-scaffold_dir_name="${NEW_PROJ_SCAFFOLD_DIR_NAME:-${SCAFFOLD_DIR_NAME:-scaffold}}"
-templates_dir="${NEW_PROJ_TEMPLATES_DIR:-${TEMPLATES_DIR:-$config_dir/templates}}"
+scaffold_dir_name="${QUICK_PROJ_SCAFFOLD_DIR_NAME:-${NEW_PROJ_SCAFFOLD_DIR_NAME:-${SCAFFOLD_DIR_NAME:-scaffold}}}"
+templates_dir="${QUICK_PROJ_TEMPLATES_DIR:-${NEW_PROJ_TEMPLATES_DIR:-${TEMPLATES_DIR:-$config_dir/templates}}}"
 
 if [[ -z "$scaffold_dir_name" || "$scaffold_dir_name" == */* ]]; then
   echo "Error: scaffold folder name must be a single directory name." >&2
@@ -401,7 +404,7 @@ if [[ "$existing" -eq 1 ]]; then
     project_name="$(basename "$project_dir")"
   fi
 else
-  base_dir="${NEW_PROJ_BASE_DIR:-${BASE_DIR:-$HOME/Documents/coding-temp}}"
+  base_dir="${QUICK_PROJ_BASE_DIR:-${NEW_PROJ_BASE_DIR:-${BASE_DIR:-$HOME/Documents/coding-temp}}}"
   project_dir="$base_dir/$project_name"
 fi
 
