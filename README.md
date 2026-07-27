@@ -49,8 +49,8 @@ Creates:
 - scaffold folder (default `scaffold`) with:
   - `AGENT-COMMS.md` — how agents talk to you
   - `AGENT-WORKFLOW.md` — how agents work (includes `scaffold version: X.Y.Z`)
-  - `ARCH-HUMAN.md` — architecture for humans
-  - `ARCH-LLM.md` — architecture for agents
+  - `CODEMAP-HUMAN.md` — codebase map for humans (files, flows, state)
+  - `CODEMAP-LLM.md` — codebase map for agents
   - `skills/` (base skills from `templates/skills/`, plus any project-local skills)
 
 Requires `git` and [GitHub CLI](https://cli.github.com/) (`gh`) logged in (`gh auth login`). If either is missing or `gh repo create` fails, the local project is still created and you get a warning.
@@ -70,7 +70,7 @@ Global templates (edit these in the repo; refreshed on every `./install.sh`):
 - `templates/` in this repo → `~/.config/quick-proj/templates/`
   - `AGENT-COMMS.md`, `AGENT-WORKFLOW.md` (product source for agent rules)
   - `skills/<skill-name>/` (base skills shipped to every project; usually include `SKILL.md`)
-  - `ARCH-HUMAN.md`, `ARCH-LLM.md`
+  - `CODEMAP-HUMAN.md`, `CODEMAP-LLM.md`
   - `AGENTS.md` (root pointer to scaffold/)
   - `README.md`
   - `.gitignore`

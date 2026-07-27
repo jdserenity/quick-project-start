@@ -7,7 +7,7 @@
 - `--existing` from inside a project: copy scaffold into cwd; git/GitHub unless `--no-repo`; preserve existing root `README.md`, `.gitignore`; migrate legacy `docs/` → `scaffold/` when present; no `cd`.
 - `--update`: refresh scaffold agent files, root `AGENTS.md`, and managed skills from `templates/skills/`; add missing scaffold files; never delete project-local files; rename `docs/` → `scaffold/` when `docs/` exists and `scaffold/` does not; resolve root via `git rev-parse --show-toplevel` or walk up to nearest `scaffold/AGENT-WORKFLOW.md` / `docs/AGENT-WORKFLOW.md` / root `AGENTS.md`.
 - `--agent-version`: print project vs latest `scaffold version: X.Y.Z` from `scaffold/AGENT-WORKFLOW.md` last line; exit 0 on match.
-- Version line `scaffold version: X.Y.Z` lives on `templates/AGENT-WORKFLOW.md` (copied into each project's `scaffold/AGENT-WORKFLOW.md`). Bump **patch** for small template edits; **minor** only for substantive new agent policy; **major** only for breaking scaffold changes.
+- Version line `scaffold version: X.Y.Z` lives on `templates/AGENT-WORKFLOW.md` (copied into each project's `scaffold/AGENT-WORKFLOW.md`). Default bump is **patch**. **Minor** only for policy/behavior projects should notice. **Major** almost never (maintainer-approved only). Renames with `--update` migration are patch, not major.
 - Agent rules have one home in this repo: `templates/AGENT-COMMS.md` + `templates/AGENT-WORKFLOW.md`. Base skills have one home: `templates/skills/<skill-name>/`. This repo's `scaffold/AGENT-*.md` and matching `scaffold/skills/` entries are consumer copies synced by `./install.sh`.
 - Normal runs print `cd` on stdout; `install.sh` adds zsh shell integration to eval `cd`.
 - New projects: root `AGENTS.md` (pointer to scaffold/), `README.md`, `.gitignore`, `scripts/sz.py`; scaffold files under `scaffold/` (or `SCAFFOLD_DIR_NAME`, except legacy `"docs"` which is treated as `"scaffold"`), including `scaffold/skills/` copied from `templates/skills/`.
@@ -35,8 +35,8 @@ quick-project-start/
   scaffold/           # this repo's project docs + synced agent-rule/skill copies
     AGENT-COMMS.md    # synced from templates/ by install.sh
     AGENT-WORKFLOW.md
-    ARCH-HUMAN.md
-    ARCH-LLM.md
+    CODEMAP-HUMAN.md
+    CODEMAP-LLM.md
     skills/           # synced from templates/skills/ by install.sh
   tests/
 ```
@@ -59,7 +59,7 @@ Root: `README.md`, `.gitignore`, `scripts/sz.py`
 
 Under scaffold dir:
 - `AGENT-COMMS.md`, `AGENT-WORKFLOW.md` (from checkout `templates/` or installed templates/; overwritten on `--update`)
-- `ARCH-HUMAN.md`, `ARCH-LLM.md` (from templates/; added if missing; not overwritten on `--update`)
+- `CODEMAP-HUMAN.md`, `CODEMAP-LLM.md` (from templates/; added if missing; not overwritten on `--update`; legacy `ARCH-HUMAN.md` / `CODEMAP.md` → `CODEMAP-HUMAN.md`, `ARCH-LLM.md` → `CODEMAP-LLM.md`)
 - `skills/` (from `templates/skills/`; matching skill names overwritten on create/`--existing`/`--update`; project-local skill names never deleted)
 
 `PROJECT-KNOWLEDGE.md` removed from the scaffold; lessons go in ARCH files. `DEPLOY.md` / `TODO.md` deprecated; not scaffolded.
