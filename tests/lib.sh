@@ -10,6 +10,19 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 CURRENT_TEST=""
 
+# Product scaffold version lives only on templates/AGENT-WORKFLOW.md — tests that
+# exercise real templates should call this instead of hardcoding X.Y.Z.
+repo_scaffold_version() {
+  local line
+  line="$(awk 'NF { last = $0 } END { print last }' "$ROOT/templates/AGENT-WORKFLOW.md")"
+  if [[ "$line" =~ ^scaffold\ version:\ ([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+    printf '%s\n' "${BASH_REMATCH[1]}"
+    return 0
+  fi
+  echo "Error: could not read scaffold version from $ROOT/templates/AGENT-WORKFLOW.md (last line: $line)" >&2
+  return 1
+}
+
 fail() {
   echo "  FAIL: $1" >&2
   TESTS_FAILED=$((TESTS_FAILED + 1))

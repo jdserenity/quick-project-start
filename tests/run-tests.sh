@@ -522,9 +522,11 @@ test_shell_integration_agent_version_does_not_eval_stdout() {
       quick-proj --agent-version
     " 2>&1
   )" || out=$?
+  local ver
+  ver="$(repo_scaffold_version)"
   assert_eq "0" "$out"
-  assert_contains "$combined" "project: scaffold version: 2.4.1"
-  assert_contains "$combined" "latest: scaffold version: 2.4.1"
+  assert_contains "$combined" "project: scaffold version: $ver"
+  assert_contains "$combined" "latest: scaffold version: $ver"
   if [[ "$combined" == *"command not found: project:"* ]]; then
     echo "FAIL: shell integration eval'd --agent-version stdout as shell commands"
     exit 1
@@ -780,9 +782,11 @@ test_agent_version_reports_missing_version_line() {
     cd "$root"
     "$checkout/quick-proj" --agent-version 2>&1
   )" || out=$?
+  local ver
+  ver="$(repo_scaffold_version)"
   assert_eq "1" "$out"
   assert_contains "$stdout" "project: (no version — last line: legacy-agent-workflow)"
-  assert_contains "$stdout" "latest: scaffold version: 2.4.1"
+  assert_contains "$stdout" "latest: scaffold version: $ver"
   teardown_quick_proj_env
 }
 
@@ -796,15 +800,16 @@ test_agent_version_from_subfolder() {
   cp "$ROOT/templates/AGENT-WORKFLOW.md" "$root/scaffold/AGENT-WORKFLOW.md"
   cp "$ROOT/templates/AGENT-COMMS.md" "$root/scaffold/AGENT-COMMS.md"
   git -C "$root" init -q
-  local out=0 stdout
+  local out=0 stdout ver
+  ver="$(repo_scaffold_version)"
   stdout="$(
     cd "$root/src"
     "$checkout/quick-proj" --agent-version 2>&1
   )"
   out=$?
   assert_eq "0" "$out"
-  assert_contains "$stdout" "project: scaffold version: 2.4.1"
-  assert_contains "$stdout" "latest: scaffold version: 2.4.1"
+  assert_contains "$stdout" "project: scaffold version: $ver"
+  assert_contains "$stdout" "latest: scaffold version: $ver"
   teardown_quick_proj_env
 }
 
@@ -822,9 +827,11 @@ test_install_refreshes_bundled_scaffold_agents() {
   printf '%s\n' 'old-bundled' >"$HOME/.config/quick-proj/bundled/AGENT-WORKFLOW.md"
   "$INSTALL_SH" >/dev/null
   local bundled
+  local ver
+  ver="$(repo_scaffold_version)"
   bundled="$(<"$HOME/.config/quick-proj/bundled/AGENT-WORKFLOW.md")"
   assert_contains "$bundled" "Indentation: 2 spaces"
-  assert_contains "$bundled" "Create commits without being asked"
+  assert_contains "$bundled" "scaffold version: $ver"
   teardown_install_home
 }
 
@@ -904,15 +911,16 @@ test_install_refreshes_templates_on_every_run() {
   printf '%s\n' 'STALE_README' >"$HOME/.config/quick-proj/templates/README.md"
   printf '%s\n' 'stale-knowledge' >"$HOME/.config/quick-proj/templates/PROJECT-KNOWLEDGE.md"
   "$INSTALL_SH" >/dev/null
-  local workflow comms readme
+  local workflow comms readme ver
+  ver="$(repo_scaffold_version)"
   workflow="$(<"$HOME/.config/quick-proj/templates/AGENT-WORKFLOW.md")"
   comms="$(<"$HOME/.config/quick-proj/templates/AGENT-COMMS.md")"
   readme="$(<"$HOME/.config/quick-proj/templates/README.md")"
-  assert_contains "$workflow" "scaffold version: 2.4.1"
+  assert_contains "$workflow" "scaffold version: $ver"
   assert_contains "$comms" "scaffold/ARCH-LLM.md"
   assert_contains "$comms" "One home per fact"
   assert_contains "$readme" "Brief description"
-  assert_contains "$(<"$HOME/.config/quick-proj/bundled/AGENT-WORKFLOW.md")" "scaffold version: 2.4.1"
+  assert_contains "$(<"$HOME/.config/quick-proj/bundled/AGENT-WORKFLOW.md")" "scaffold version: $ver"
   assert_no_file "$HOME/.config/quick-proj/templates/PROJECT-KNOWLEDGE.md"
   teardown_install_home
 }
