@@ -51,7 +51,7 @@ Creates:
   - `AGENT-WORKFLOW.md` — how agents work (includes `scaffold version: X.Y.Z`)
   - `ARCH-HUMAN.md` — architecture for humans
   - `ARCH-LLM.md` — architecture for agents
-  - `skills/` (empty folder)
+  - `skills/` (base skills from `templates/skills/`, plus any project-local skills)
 
 Requires `git` and [GitHub CLI](https://cli.github.com/) (`gh`) logged in (`gh auth login`). If either is missing or `gh repo create` fails, the local project is still created and you get a warning.
 
@@ -69,13 +69,16 @@ Global templates (edit these in the repo; refreshed on every `./install.sh`):
 
 - `templates/` in this repo → `~/.config/quick-proj/templates/`
   - `AGENT-COMMS.md`, `AGENT-WORKFLOW.md` (product source for agent rules)
+  - `skills/<skill-name>/` (base skills shipped to every project; usually include `SKILL.md`)
   - `ARCH-HUMAN.md`, `ARCH-LLM.md`
   - `AGENTS.md` (root pointer to scaffold/)
   - `README.md`
   - `.gitignore`
   - `sz.py` (copied into project root `scripts/` when scaffolding)
 
-This repo's `scaffold/AGENT-*.md` files are consumer copies (like any other project). `./install.sh` refreshes them from `templates/`.
+This repo's `scaffold/AGENT-*.md` and matching `scaffold/skills/` entries are consumer copies (like any other project). `./install.sh` refreshes them from `templates/`.
+
+To add a skill once for all projects: create `templates/skills/<skill-name>/SKILL.md`, bump the version line in `templates/AGENT-WORKFLOW.md`, run `./install.sh`. New projects get it; existing projects pick it up with `quick-proj --update`.
 
 Per-run overrides:
 
