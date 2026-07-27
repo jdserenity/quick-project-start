@@ -61,8 +61,9 @@ apply_scaffold_to_project() {
   migrate_docs_folder_if_needed "$project_dir"
   scaffold_dir="$project_dir/$scaffold_dir_name"
 
-  mkdir -p "$templates_dir" "$scaffold_dir" "$scaffold_dir/skills"
+  mkdir -p "$templates_dir" "$scaffold_dir"
   ensure_template_stubs
+  copy_scaffold_skills_to "$scaffold_dir/skills"
 
   root_files=(README.md AGENTS.md)
   for file_name in "${root_files[@]}"; do

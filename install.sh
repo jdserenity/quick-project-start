@@ -36,6 +36,7 @@ bundled_dir="$config_dir/bundled"
 mkdir -p "$bundled_dir"
 
 sync_managed_templates() {
+  local entry name
   # Product source is repo templates/ (including agent rules).
   for file_name in AGENT-COMMS.md AGENT-WORKFLOW.md ARCH-HUMAN.md ARCH-LLM.md README.md AGENTS.md sz.py; do
     if [[ -f "$repo_templates_dir/$file_name" ]]; then
@@ -56,6 +57,27 @@ sync_managed_templates() {
   done
   if [[ -f "$repo_templates_dir/.gitignore" ]]; then
     cp "$repo_templates_dir/.gitignore" "$templates_dir/.gitignore"
+  fi
+  # Mirror base skills into installed templates/ and this repo's scaffold/skills/.
+  rm -rf "$templates_dir/skills"
+  if [[ -d "$repo_templates_dir/skills" ]]; then
+    mkdir -p "$templates_dir/skills"
+    cp -R "$repo_templates_dir/skills/." "$templates_dir/skills/"
+    if [[ -d "$repo_scaffold_dir" ]]; then
+      mkdir -p "$repo_scaffold_dir/skills"
+      shopt -s nullglob dotglob
+      for entry in "$repo_templates_dir/skills"/*; do
+        name="$(basename "$entry")"
+        [[ "$name" == "." || "$name" == ".." ]] && continue
+        if [[ -d "$entry" ]]; then
+          rm -rf "$repo_scaffold_dir/skills/$name"
+          cp -R "$entry" "$repo_scaffold_dir/skills/$name"
+        elif [[ -f "$entry" ]]; then
+          cp "$entry" "$repo_scaffold_dir/skills/$name"
+        fi
+      done
+      shopt -u nullglob dotglob
+    fi
   fi
   for deprecated in DEPLOY.md TODO.md ARCHITECTURE.md KNOWLEDGE.md AGENT-UNDERSTANDING.md PROJECT-KNOWLEDGE.md; do
     rm -f "$templates_dir/$deprecated"

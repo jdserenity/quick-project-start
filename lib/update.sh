@@ -9,11 +9,14 @@ run_project_update() {
   migrate_docs_folder_if_needed "$project_dir"
   scaffold_dir="$project_dir/$scaffold_dir_name"
 
-  mkdir -p "$templates_dir" "$scaffold_dir" "$scaffold_dir/skills"
+  mkdir -p "$templates_dir" "$scaffold_dir"
   ensure_template_stubs
 
   write_scaffold_agent_files_to "$scaffold_dir"
   echo "Updated scaffold agent files" >&2
+
+  copy_scaffold_skills_to "$scaffold_dir/skills"
+  echo "Updated scaffold skills" >&2
 
   agents_template="$templates_dir/AGENTS.md"
   if [[ ! -f "$agents_template" ]]; then : >"$agents_template"; fi

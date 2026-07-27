@@ -5,6 +5,7 @@
 #   lib/config.sh    — config paths, scaffold dir name, project-root discovery, docs→scaffold
 #   lib/version.sh   — --agent-version
 #   lib/agents.sh    — copy/seed AGENT-COMMS.md + AGENT-WORKFLOW.md
+#   lib/skills.sh    — copy templates/skills/ → scaffold/skills/
 #   lib/scaffold.sh  — create/--existing file layout
 #   lib/update.sh    — --update
 #   lib/git.sh       — optional git + GitHub
@@ -16,7 +17,7 @@ set -euo pipefail
 usage() {
   echo "Usage: quick-proj [--no-repo] [--existing] \"project-name\""
   echo "       quick-proj --existing   # scaffold into current directory"
-  echo "       quick-proj --update   # refresh scaffold agent files and add missing scaffold files"
+  echo "       quick-proj --update   # refresh scaffold agent files/skills and add missing scaffold files"
   echo "       quick-proj --agent-version   # print this project's scaffold version and the latest"
 }
 
@@ -42,6 +43,8 @@ source "$LIB_DIR/config.sh"
 source "$LIB_DIR/version.sh"
 # shellcheck source=/dev/null
 source "$LIB_DIR/agents.sh"
+# shellcheck source=/dev/null
+source "$LIB_DIR/skills.sh"
 # shellcheck source=/dev/null
 source "$LIB_DIR/scaffold.sh"
 # shellcheck source=/dev/null
