@@ -1041,6 +1041,80 @@ test_install_rewrites_docs_scaffold_dir_name() {
   teardown_install_home
 }
 
+# --- skills: templates/skills/ → project scaffold/skills/ ---
+
+test_creates_project_copies_template_skills() {
+  setup_quick_proj_env
+  seed_standard_templates
+  local checkout="$TEST_TMP/checkout-skills-create"
+  stage_quick_proj "$checkout"
+  mkdir -p "$checkout/templates/skills/demo-skill"
+  printf '%s\n' 'demo-skill-body' >"$checkout/templates/skills/demo-skill/SKILL.md"
+  printf '%s\n' '# Code style' >"$checkout/templates/AGENT-COMMS.md"
+  printf '%s\n' 'scaffold version: 1.0.0' >"$checkout/templates/AGENT-WORKFLOW.md"
+  (
+    cd "$TEST_TMP"
+    "$checkout/quick-proj" "with-skills" >/dev/null
+  )
+  local root="$QUICK_PROJ_BASE_DIR/with-skills"
+  assert_eq "demo-skill-body" "$(tr -d '\n' <"$root/scaffold/skills/demo-skill/SKILL.md")"
+  teardown_quick_proj_env
+}
+
+test_update_refreshes_managed_skills_preserves_local() {
+  setup_quick_proj_env
+  seed_standard_templates
+  local root="$TEST_TMP/skills-update" checkout="$TEST_TMP/checkout-skills-update"
+  mkdir -p "$root/scaffold/skills/demo-skill" "$root/scaffold/skills/local-only"
+  mkdir -p "$checkout/templates/skills/demo-skill"
+  stage_quick_proj "$checkout"
+  printf '%s\n' 'stale-skill' >"$root/scaffold/skills/demo-skill/SKILL.md"
+  printf '%s\n' 'keep-local' >"$root/scaffold/skills/local-only/SKILL.md"
+  printf '%s\n' 'fresh-skill' >"$checkout/templates/skills/demo-skill/SKILL.md"
+  printf '%s\n' 'fresh-comms' >"$checkout/templates/AGENT-COMMS.md"
+  printf '%s\n' 'fresh-workflow' >"$checkout/templates/AGENT-WORKFLOW.md"
+  printf '%s\n' 'scaffold version: 9.9.9' >>"$checkout/templates/AGENT-WORKFLOW.md"
+  git -C "$root" init -q
+  (
+    cd "$root"
+    "$checkout/quick-proj" --update >/dev/null
+  )
+  assert_eq "fresh-skill" "$(tr -d '\n' <"$root/scaffold/skills/demo-skill/SKILL.md")"
+  assert_eq "keep-local" "$(tr -d '\n' <"$root/scaffold/skills/local-only/SKILL.md")"
+  teardown_quick_proj_env
+}
+
+test_existing_copies_template_skills() {
+  setup_quick_proj_env
+  seed_standard_templates
+  local root="$TEST_TMP/existing-skills" checkout="$TEST_TMP/checkout-existing-skills"
+  mkdir -p "$root" "$checkout/templates/skills/demo-skill"
+  stage_quick_proj "$checkout"
+  printf '%s\n' 'demo-skill-body' >"$checkout/templates/skills/demo-skill/SKILL.md"
+  printf '%s\n' 'comms' >"$checkout/templates/AGENT-COMMS.md"
+  printf '%s\n' 'scaffold version: 1.0.0' >"$checkout/templates/AGENT-WORKFLOW.md"
+  (
+    cd "$root"
+    "$checkout/quick-proj" --existing --no-repo >/dev/null
+  )
+  assert_eq "demo-skill-body" "$(tr -d '\n' <"$root/scaffold/skills/demo-skill/SKILL.md")"
+  teardown_quick_proj_env
+}
+
+test_install_syncs_skills_into_config_templates() {
+  setup_install_home
+  local skill_dir="$ROOT/templates/skills/__tmp-install-skill__"
+  mkdir -p "$skill_dir"
+  printf '%s\n' 'install-skill-marker' >"$skill_dir/SKILL.md"
+  "$INSTALL_SH" >/dev/null
+  assert_eq "install-skill-marker" \
+    "$(tr -d '\n' <"$HOME/.config/quick-proj/templates/skills/__tmp-install-skill__/SKILL.md")"
+  assert_eq "install-skill-marker" \
+    "$(tr -d '\n' <"$ROOT/scaffold/skills/__tmp-install-skill__/SKILL.md")"
+  rm -rf "$skill_dir" "$ROOT/scaffold/skills/__tmp-install-skill__"
+  teardown_install_home
+}
+
 # --- runner ---
 
 main() {
@@ -1108,6 +1182,10 @@ main() {
     test_install_rewrites_docs_scaffold_dir_name
     test_install_does_not_modify_repo_arch_docs
     test_install_syncs_agent_templates_into_repo_scaffold
+    test_creates_project_copies_template_skills
+    test_update_refreshes_managed_skills_preserves_local
+    test_existing_copies_template_skills
+    test_install_syncs_skills_into_config_templates
   )
 
   for t in "${tests[@]}"; do
