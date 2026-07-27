@@ -87,8 +87,8 @@ test_creates_scaffold_and_root_readme() {
   local root="$QUICK_PROJ_BASE_DIR/alpha"
   assert_file "$root/README.md"
   assert_file "$root/.gitignore"
-  assert_file "$root/scaffold/ARCH-HUMAN.md"
-  assert_file "$root/scaffold/ARCH-LLM.md"
+  assert_file "$root/scaffold/CODEMAP-HUMAN.md"
+  assert_file "$root/scaffold/CODEMAP-LLM.md"
   assert_no_file "$root/scaffold/PROJECT-KNOWLEDGE.md"
   assert_file "$root/scaffold/skills"
   assert_file "$root/scripts/sz.py"
@@ -104,8 +104,8 @@ test_creates_scaffold_and_root_readme() {
   assert_eq "custom-readme" "$(tr -d '\n' <"$root/README.md")"
   assert_contains "$(<"$root/scaffold/AGENT-COMMS.md")" "Communication with the maintainer"
   assert_contains "$(<"$root/scaffold/AGENT-WORKFLOW.md")" "Indentation: 2 spaces"
-  assert_eq "custom-arch-human" "$(tr -d '\n' <"$root/scaffold/ARCH-HUMAN.md")"
-  assert_eq "custom-arch-llm" "$(tr -d '\n' <"$root/scaffold/ARCH-LLM.md")"
+  assert_eq "custom-codemap-human" "$(tr -d '\n' <"$root/scaffold/CODEMAP-HUMAN.md")"
+  assert_eq "custom-codemap-llm" "$(tr -d '\n' <"$root/scaffold/CODEMAP-LLM.md")"
   assert_eq "node_modules/" "$(tr -d '\n' <"$root/.gitignore")"
 
   teardown_quick_proj_env
@@ -117,7 +117,7 @@ test_custom_scaffold_dir_name() {
   export QUICK_PROJ_SCAFFOLD_DIR_NAME="blueprint"
   run_quick_proj "beta" >/dev/null
 
-  assert_file "$QUICK_PROJ_BASE_DIR/beta/blueprint/ARCH-HUMAN.md"
+  assert_file "$QUICK_PROJ_BASE_DIR/beta/blueprint/CODEMAP-HUMAN.md"
   assert_file "$QUICK_PROJ_BASE_DIR/beta/AGENTS.md"
   assert_no_file "$QUICK_PROJ_BASE_DIR/beta/blueprint/README.md"
 
@@ -131,8 +131,8 @@ test_respects_config_env_scaffold_name() {
   unset QUICK_PROJ_SCAFFOLD_DIR_NAME
   run_quick_proj "gamma" >/dev/null
 
-  assert_file "$QUICK_PROJ_BASE_DIR/gamma/notes/ARCH-HUMAN.md"
-  assert_no_file "$QUICK_PROJ_BASE_DIR/gamma/scaffold/ARCH-HUMAN.md"
+  assert_file "$QUICK_PROJ_BASE_DIR/gamma/notes/CODEMAP-HUMAN.md"
+  assert_no_file "$QUICK_PROJ_BASE_DIR/gamma/scaffold/CODEMAP-HUMAN.md"
 
   teardown_quick_proj_env
 }
@@ -145,7 +145,7 @@ test_copies_agent_rules_from_checkout_templates() {
   project_workflow="$(<"$QUICK_PROJ_BASE_DIR/delta/scaffold/AGENT-WORKFLOW.md")"
   project_comms="$(<"$QUICK_PROJ_BASE_DIR/delta/scaffold/AGENT-COMMS.md")"
   assert_contains "$project_workflow" "Indentation: 2 spaces"
-  assert_contains "$project_comms" "scaffold/ARCH-LLM.md"
+  assert_contains "$project_comms" "scaffold/CODEMAP-LLM.md"
   assert_eq "$(shasum -a 256 "$ROOT/templates/AGENT-WORKFLOW.md" | awk '{print $1}')" \
     "$(shasum -a 256 "$QUICK_PROJ_BASE_DIR/delta/scaffold/AGENT-WORKFLOW.md" | awk '{print $1}')"
   assert_eq "$(shasum -a 256 "$ROOT/templates/AGENT-COMMS.md" | awk '{print $1}')" \
@@ -156,7 +156,7 @@ test_copies_agent_rules_from_checkout_templates() {
 
 test_creates_default_gitignore_template_when_missing() {
   setup_quick_proj_env
-  for f in README.md ARCH-HUMAN.md ARCH-LLM.md; do
+  for f in README.md CODEMAP-HUMAN.md CODEMAP-LLM.md; do
     : >"$QUICK_PROJ_TEMPLATES_DIR/$f"
   done
   run_quick_proj "epsilon" >/dev/null
@@ -277,7 +277,7 @@ test_existing_inserts_scaffold_and_agents() {
   assert_eq "keep-readme" "$(tr -d '\n' <"$root/README.md")"
   assert_eq "keep-ignore" "$(tr -d '\n' <"$root/.gitignore")"
   assert_contains "$(<"$root/scaffold/AGENT-COMMS.md")" "Communication with the maintainer"
-  assert_eq "custom-arch-human" "$(tr -d '\n' <"$root/scaffold/ARCH-HUMAN.md")"
+  assert_eq "custom-codemap-human" "$(tr -d '\n' <"$root/scaffold/CODEMAP-HUMAN.md")"
   assert_eq "legacy-deploy" "$(tr -d '\n' <"$root/scaffold/DEPLOY.md")"
   assert_eq "legacy-todo" "$(tr -d '\n' <"$root/scaffold/TODO.md")"
   assert_file "$root/scaffold/skills"
@@ -561,7 +561,8 @@ test_update_replaces_agents_and_adds_missing_scaffold() {
   printf '%s\n' 'scaffold version: 9.9.9' >>"$checkout/templates/AGENT-WORKFLOW.md"
   printf '%s\n' 'stale-agent-workflow' >"$root/scaffold/AGENT-WORKFLOW.md"
   printf '%s\n' 'stale-agent-comms' >"$root/scaffold/AGENT-COMMS.md"
-  printf '%s\n' 'my-arch-human' >"$root/scaffold/ARCH-HUMAN.md"
+  printf '%s\n' 'my-codemap' >"$root/scaffold/ARCH-HUMAN.md"
+  printf '%s\n' 'my-llm' >"$root/scaffold/ARCH-LLM.md"
   printf '%s\n' 'legacy-deploy' >"$root/scaffold/DEPLOY.md"
   git -C "$root" init -q
   local stderr
@@ -572,9 +573,14 @@ test_update_replaces_agents_and_adds_missing_scaffold() {
   assert_contains "$stderr" "Updated scaffold agent files"
   assert_contains "$stderr" "Updated AGENTS.md"
   assert_contains "$stderr" "Updated scaffold in: $(cd "$root" && pwd -P)"
+  assert_contains "$stderr" "Renamed scaffold/ARCH-HUMAN.md → scaffold/CODEMAP-HUMAN.md"
+  assert_contains "$stderr" "Renamed scaffold/ARCH-LLM.md → scaffold/CODEMAP-LLM.md"
   assert_contains "$(<"$root/scaffold/AGENT-WORKFLOW.md")" "fresh-from-repo"
   assert_eq "custom-agents-pointer" "$(tr -d '\n' <"$root/AGENTS.md")"
-  assert_eq "my-arch-human" "$(tr -d '\n' <"$root/scaffold/ARCH-HUMAN.md")"
+  assert_eq "my-codemap" "$(tr -d '\n' <"$root/scaffold/CODEMAP-HUMAN.md")"
+  assert_eq "my-llm" "$(tr -d '\n' <"$root/scaffold/CODEMAP-LLM.md")"
+  assert_no_file "$root/scaffold/ARCH-HUMAN.md"
+  assert_no_file "$root/scaffold/ARCH-LLM.md"
   assert_eq "legacy-deploy" "$(tr -d '\n' <"$root/scaffold/DEPLOY.md")"
   assert_no_file "$root/scaffold/PROJECT-KNOWLEDGE.md"
   assert_eq "template-sz-marker" "$(tr -d '\n' <"$root/scripts/sz.py")"
@@ -898,7 +904,7 @@ test_install_creates_config_and_templates_when_missing() {
   workflow="$(<"$HOME/.config/quick-proj/templates/AGENT-WORKFLOW.md")"
   comms="$(<"$HOME/.config/quick-proj/templates/AGENT-COMMS.md")"
   assert_contains "$workflow" "Indentation: 2 spaces"
-  assert_contains "$comms" "scaffold/ARCH-LLM.md"
+  assert_contains "$comms" "scaffold/CODEMAP-LLM.md"
   teardown_install_home
 }
 
@@ -917,7 +923,7 @@ test_install_refreshes_templates_on_every_run() {
   comms="$(<"$HOME/.config/quick-proj/templates/AGENT-COMMS.md")"
   readme="$(<"$HOME/.config/quick-proj/templates/README.md")"
   assert_contains "$workflow" "scaffold version: $ver"
-  assert_contains "$comms" "scaffold/ARCH-LLM.md"
+  assert_contains "$comms" "scaffold/CODEMAP-LLM.md"
   assert_contains "$comms" "One home per fact"
   assert_contains "$readme" "Brief description"
   assert_contains "$(<"$HOME/.config/quick-proj/bundled/AGENT-WORKFLOW.md")" "scaffold version: $ver"
@@ -939,13 +945,13 @@ test_install_removes_deprecated_template_files() {
 }
 
 test_install_does_not_modify_repo_arch_docs() {
-  local arch_file="$ROOT/scaffold/ARCH-LLM.md"
+  local arch_file="$ROOT/scaffold/CODEMAP-LLM.md"
   local before after
   before="$(shasum -a 256 "$arch_file" | awk '{print $1}')"
   setup_install_home
   "$INSTALL_SH" >/dev/null
   after="$(shasum -a 256 "$arch_file" | awk '{print $1}')"
-  assert_eq "$before" "$after" "repo scaffold/ARCH-LLM.md changed after install"
+  assert_eq "$before" "$after" "repo scaffold/CODEMAP-LLM.md changed after install"
   teardown_install_home
 }
 
@@ -974,7 +980,7 @@ test_existing_preserves_agents_when_present() {
   )
   assert_eq "keep-comms" "$(tr -d '\n' <"$root/scaffold/AGENT-COMMS.md")"
   assert_eq "keep-workflow" "$(tr -d '\n' <"$root/scaffold/AGENT-WORKFLOW.md")"
-  assert_eq "custom-arch-human" "$(tr -d '\n' <"$root/scaffold/ARCH-HUMAN.md")"
+  assert_eq "custom-codemap-human" "$(tr -d '\n' <"$root/scaffold/CODEMAP-HUMAN.md")"
   assert_no_file "$root/scaffold/PROJECT-KNOWLEDGE.md"
   assert_file "$root/scaffold/skills"
   teardown_quick_proj_env
@@ -995,8 +1001,10 @@ test_update_renames_docs_to_scaffold() {
     run_quick_proj --update 2>&1 >/dev/null
   )"
   assert_contains "$stderr" "Renamed docs/ → scaffold/"
+  assert_contains "$stderr" "Renamed scaffold/ARCH-HUMAN.md → scaffold/CODEMAP-HUMAN.md"
   assert_file "$root/scaffold/AGENT-WORKFLOW.md"
-  assert_eq "keep-arch" "$(tr -d '\n' <"$root/scaffold/ARCH-HUMAN.md")"
+  assert_eq "keep-arch" "$(tr -d '\n' <"$root/scaffold/CODEMAP-HUMAN.md")"
+  assert_no_file "$root/scaffold/ARCH-HUMAN.md"
   assert_no_file "$root/docs"
   teardown_quick_proj_env
 }
@@ -1026,7 +1034,7 @@ test_config_docs_name_creates_scaffold_not_docs() {
   printf '%s\n' 'SCAFFOLD_DIR_NAME="docs"' >"$QUICK_PROJ_CONFIG_FILE"
   unset QUICK_PROJ_SCAFFOLD_DIR_NAME
   run_quick_proj "docs-name" >/dev/null
-  assert_file "$QUICK_PROJ_BASE_DIR/docs-name/scaffold/ARCH-HUMAN.md"
+  assert_file "$QUICK_PROJ_BASE_DIR/docs-name/scaffold/CODEMAP-HUMAN.md"
   assert_no_file "$QUICK_PROJ_BASE_DIR/docs-name/docs"
   teardown_quick_proj_env
 }

@@ -138,8 +138,8 @@ seed_standard_templates() {
   # Seed only the blank project templates here.
   printf '%s\n' 'custom-agents-pointer' >"$QUICK_PROJ_TEMPLATES_DIR/AGENTS.md"
   printf '%s\n' 'custom-readme' >"$QUICK_PROJ_TEMPLATES_DIR/README.md"
-  printf '%s\n' 'custom-arch-human' >"$QUICK_PROJ_TEMPLATES_DIR/ARCH-HUMAN.md"
-  printf '%s\n' 'custom-arch-llm' >"$QUICK_PROJ_TEMPLATES_DIR/ARCH-LLM.md"
+  printf '%s\n' 'custom-codemap-human' >"$QUICK_PROJ_TEMPLATES_DIR/CODEMAP-HUMAN.md"
+  printf '%s\n' 'custom-codemap-llm' >"$QUICK_PROJ_TEMPLATES_DIR/CODEMAP-LLM.md"
   printf '%s\n' 'node_modules/' >"$QUICK_PROJ_TEMPLATES_DIR/.gitignore"
   printf '%s\n' 'template-sz-marker' >"$QUICK_PROJ_TEMPLATES_DIR/sz.py"
 }
