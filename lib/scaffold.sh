@@ -59,6 +59,7 @@ apply_scaffold_to_project() {
   local gitignore_template gitignore_target
 
   migrate_docs_folder_if_needed "$project_dir"
+  migrate_codemap_filenames_if_needed "$project_dir"
   scaffold_dir="$project_dir/$scaffold_dir_name"
 
   mkdir -p "$templates_dir" "$scaffold_dir"

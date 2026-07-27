@@ -48,6 +48,30 @@ migrate_docs_folder_if_needed() {
   fi
 }
 
+# Legacy architecture/codemap names → CODEMAP-HUMAN.md / CODEMAP-LLM.md.
+migrate_codemap_filenames_if_needed() {
+  local project_dir="$1" scaffold_dir
+  local target_human target_llm legacy
+  scaffold_dir="$project_dir/$scaffold_dir_name"
+  target_human="$scaffold_dir/CODEMAP-HUMAN.md"
+  target_llm="$scaffold_dir/CODEMAP-LLM.md"
+
+  if [[ ! -e "$target_human" ]]; then
+    for legacy in ARCH-HUMAN.md CODEMAP.md; do
+      if [[ -f "$scaffold_dir/$legacy" ]]; then
+        mv "$scaffold_dir/$legacy" "$target_human"
+        echo "Renamed scaffold/$legacy → scaffold/CODEMAP-HUMAN.md" >&2
+        break
+      fi
+    done
+  fi
+
+  if [[ ! -e "$target_llm" && -f "$scaffold_dir/ARCH-LLM.md" ]]; then
+    mv "$scaffold_dir/ARCH-LLM.md" "$target_llm"
+    echo "Renamed scaffold/ARCH-LLM.md → scaffold/CODEMAP-LLM.md" >&2
+  fi
+}
+
 # Walk up (or use git toplevel) to find the project root.
 # Recognizes scaffold/, legacy docs/, or root AGENTS.md.
 find_project_root() {

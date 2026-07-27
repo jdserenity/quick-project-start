@@ -22,7 +22,7 @@ usage() {
 }
 
 # --- constants ---
-SCAFFOLD_DOC_FILES=(ARCH-HUMAN.md ARCH-LLM.md)
+SCAFFOLD_DOC_FILES=(CODEMAP-HUMAN.md CODEMAP-LLM.md)
 
 # --- locate and load lib/ ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -38,13 +38,15 @@ mkdir -p "$bundled_dir"
 sync_managed_templates() {
   local entry name
   # Product source is repo templates/ (including agent rules).
-  for file_name in AGENT-COMMS.md AGENT-WORKFLOW.md ARCH-HUMAN.md ARCH-LLM.md README.md AGENTS.md sz.py; do
+  for file_name in AGENT-COMMS.md AGENT-WORKFLOW.md CODEMAP-HUMAN.md CODEMAP-LLM.md README.md AGENTS.md sz.py; do
     if [[ -f "$repo_templates_dir/$file_name" ]]; then
       cp "$repo_templates_dir/$file_name" "$templates_dir/$file_name"
     else
       echo "Warning: missing template $repo_templates_dir/$file_name; skipped." >&2
     fi
   done
+  # Drop legacy template names so installs do not keep shipping old filenames.
+  rm -f "$templates_dir/ARCH-HUMAN.md" "$templates_dir/ARCH-LLM.md" "$templates_dir/CODEMAP.md"
   # Keep legacy bundled/ populated so older installs and --update still work.
   for file_name in AGENT-COMMS.md AGENT-WORKFLOW.md; do
     if [[ -f "$repo_templates_dir/$file_name" ]]; then
@@ -79,7 +81,7 @@ sync_managed_templates() {
       shopt -u nullglob dotglob
     fi
   fi
-  for deprecated in DEPLOY.md TODO.md ARCHITECTURE.md KNOWLEDGE.md AGENT-UNDERSTANDING.md PROJECT-KNOWLEDGE.md; do
+  for deprecated in DEPLOY.md TODO.md ARCHITECTURE.md KNOWLEDGE.md AGENT-UNDERSTANDING.md PROJECT-KNOWLEDGE.md ARCH-HUMAN.md ARCH-LLM.md CODEMAP.md; do
     rm -f "$templates_dir/$deprecated"
     rm -f "$bundled_dir/$deprecated"
   done

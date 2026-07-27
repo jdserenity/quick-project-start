@@ -7,6 +7,7 @@ run_project_update() {
   project_dir="$(find_project_root "$(pwd)")"
   load_scaffold_config || exit 1
   migrate_docs_folder_if_needed "$project_dir"
+  migrate_codemap_filenames_if_needed "$project_dir"
   scaffold_dir="$project_dir/$scaffold_dir_name"
 
   mkdir -p "$templates_dir" "$scaffold_dir"
