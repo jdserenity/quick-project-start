@@ -1109,6 +1109,20 @@ test_existing_copies_template_skills() {
   teardown_quick_proj_env
 }
 
+test_templates_require_automatic_commits_and_pushes() {
+  local workflow skill
+  workflow="$(<"$ROOT/templates/AGENT-WORKFLOW.md")"
+  skill="$(<"$ROOT/templates/skills/logical-commits/SKILL.md")"
+
+  assert_contains "$workflow" "automatically commit and push completed work"
+  assert_contains "$workflow" 'scaffold/skills/logical-commits/SKILL.md'
+  assert_contains "$skill" "Treat Git history as part of implementation"
+  assert_contains "$skill" 'git push -u origin HEAD'
+  assert_contains "$skill" "Never amend, reset, rebase, squash, or force-push"
+  assert_true "$([[ "$skill" != *"disable-model-invocation: true"* ]] && echo 1)" \
+    "logical-commits must allow automatic invocation"
+}
+
 test_install_syncs_skills_into_config_templates() {
   setup_install_home
   local skill_dir="$ROOT/templates/skills/__tmp-install-skill__"
@@ -1193,6 +1207,7 @@ main() {
     test_creates_project_copies_template_skills
     test_update_refreshes_managed_skills_preserves_local
     test_existing_copies_template_skills
+    test_templates_require_automatic_commits_and_pushes
     test_install_syncs_skills_into_config_templates
   )
 
