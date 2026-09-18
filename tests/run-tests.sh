@@ -1120,6 +1120,8 @@ test_templates_require_automatic_commits_and_pushes() {
   assert_contains "$skill" "Treat Git history as part of implementation"
   assert_contains "$skill" "before investigating or implementing the next cycle"
   assert_contains "$skill" "must never be the first time several completed cycles are committed together"
+  assert_contains "$skill" "Example: one turn with three independent changes"
+  assert_contains "$skill" "The resulting history has three commits"
   assert_contains "$skill" 'git push -u origin HEAD'
   assert_contains "$skill" "Never amend, reset, rebase, squash, or force-push"
   assert_true "$([[ "$skill" != *"disable-model-invocation: true"* ]] && echo 1)" \
