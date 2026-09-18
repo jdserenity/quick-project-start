@@ -28,6 +28,16 @@ If the working tree contains changes from two completed cycles, stop immediately
 
 Use one commit only when the changes are genuinely inseparable: splitting them would make a commit misleading or broken. Do not call changes inseparable merely because they were requested together, edited in the same file, or completed in the same turn.
 
+## Example: one turn with three independent changes
+
+If the request is “add CSV export, improve the empty state, and document the new environment variable,” the turn should look like this:
+
+1. Implement CSV export and its tests. Run the export checks. Commit and push `Add CSV export for reports.`
+2. Only after that push succeeds, implement the empty-state change and its tests. Run the UI checks. Commit and push `Improve the empty state for empty reports.`
+3. Only after that push succeeds, update the environment-variable documentation. Run the documentation check. Commit and push `Document the reports environment variable.`
+
+The resulting history has three commits, even though the user asked for all three changes in one turn. It must not end with one commit containing export, UI, and documentation work just because the agent completed them during the same pass.
+
 ## Commit messages
 
 Write complete sentences: a short subject stating what changed and why it matters (focus on "why" over "what").
