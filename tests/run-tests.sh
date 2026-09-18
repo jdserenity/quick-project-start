@@ -1115,8 +1115,11 @@ test_templates_require_automatic_commits_and_pushes() {
   skill="$(<"$ROOT/templates/skills/logical-commits/SKILL.md")"
 
   assert_contains "$workflow" "automatically commit and push completed work"
+  assert_contains "$workflow" "The end of a turn is never the trigger for the first commit"
   assert_contains "$workflow" 'scaffold/skills/logical-commits/SKILL.md'
   assert_contains "$skill" "Treat Git history as part of implementation"
+  assert_contains "$skill" "before investigating or implementing the next cycle"
+  assert_contains "$skill" "must never be the first time several completed cycles are committed together"
   assert_contains "$skill" 'git push -u origin HEAD'
   assert_contains "$skill" "Never amend, reset, rebase, squash, or force-push"
   assert_true "$([[ "$skill" != *"disable-model-invocation: true"* ]] && echo 1)" \
